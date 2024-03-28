@@ -45,41 +45,6 @@ class Parser(argparse.ArgumentParser):
         )
 
 
-def main():
-    parser = Parser()
-    global args
-    args = parser.parse_args()
-    print("Script arguments:")
-    print(args.__dict__)
-
-    pd_dataset = pd.read_csv(os.path.join(args.data_dir, f'{args.dataset}.csv'))
-    dataset = {
-        'pd_dataset': pd_dataset,
-        'maximization': True,
-        'cache_path': os.path.join(args.data_dir, f'cache/{args.dataset}/'),
-        'opt_x': pd_dataset['Word'][pd_dataset['Similarity'].argmax()],
-        'opt_val': pd_dataset['Similarity'].max()
-    }
-    os.makedirs(dataset['cache_path'], exist_ok=True)
-
-    results = run_bayesopt(dataset, n_init_data=args.n_init_data, T=args.T, randseed=args.seed)
-
-    # Plot
-    t = np.arange(len(results))
-    plt.axhline(dataset['opt_val'], color='black', linestyle='dashed')
-    plt.plot(t, results)
-    plt.xlabel(r'$t$')
-    plt.ylabel(r'Objective ($\uparrow$)')
-    plt.title(f"steps={results['steps_to_opt']}, best_x={results['best_x']}, best_y={results['best_y']}")
-    os.makedirs(os.path.join('outputs', args.data_dir), exist_ok=True)
-    plt.savefig(os.path.join('outputs', args.data_dir,
-                             f'{args.dataset}_T-{args.T}_init-{args.n_init_data}_rand-{args.seed}.png'))
-    print(f'Saved plot at ' +
-          os.path.join('outputs', args.data_dir,
-                       f'{args.dataset}_T-{args.T}_init-{args.n_init_data}_rand-{args.seed}.png')
-          )
-
-
 def load_features(dataset):
     """
     Load cached features (e.g. the fingerprints of each molecules in the dataset) if exist.
@@ -241,13 +206,44 @@ def run_bayesopt(dataset, n_init_data=5, T=26, device='cpu', randseed=1):
         # Log the current best f(x) value
         trace_best_y.append(helpers.y_transform(best_y, MAXIMIZATION))
 
-        if best_y == ground_truth_max:
-            print(f'Optimum found at step {steps_to_opt}')
-        else:
-            print(f'Optimum not found. Best value so far: {best_x} ({best_y})')
+    if best_y == ground_truth_max:
+        print(f'Optimum found at step {steps_to_opt}')
+    else:
+        print(f'Optimum not found. Best value so far: {best_x} ({round(best_y, 3)})')
 
     return {"trace": trace_best_y, "steps_to_opt": steps_to_opt, "best_x": best_x, "best_y": best_y}
 
 
 if __name__ == '__main__':
-    main()
+    parser = Parser()
+    global args
+    args = parser.parse_args()
+    print("Script arguments:")
+    print(args.__dict__)
+
+    pd_dataset = pd.read_csv(os.path.join(args.data_dir, f'{args.dataset}.csv'))
+    dataset = {
+        'pd_dataset': pd_dataset,
+        'maximization': True,
+        'cache_path': os.path.join(args.data_dir, f'cache/{args.dataset}/'),
+        'opt_x': pd_dataset['Word'][pd_dataset['Similarity'].argmax()],
+        'opt_val': pd_dataset['Similarity'].max()
+    }
+    os.makedirs(dataset['cache_path'], exist_ok=True)
+
+    results = run_bayesopt(dataset, n_init_data=args.n_init_data, T=args.T, randseed=args.seed)
+
+    # Plot
+    t = np.arange(len(results['trace']))
+    plt.axhline(dataset['opt_val'], color='black', linestyle='dashed')
+    plt.plot(t, results['trace'])
+    plt.xlabel(r'$t$')
+    plt.ylabel(r'Objective ($\uparrow$)')
+    plt.title(f"steps={results['steps_to_opt']}, best_x={results['best_x']}, best_y={results['best_y']}")
+    os.makedirs(os.path.join('outputs', args.data_dir), exist_ok=True)
+    plt.savefig(os.path.join('outputs', args.data_dir,
+                             f'{args.dataset}_T-{args.T}_init-{args.n_init_data}_rand-{args.seed}.png'))
+    print(f'Saved plot at ' +
+          os.path.join('outputs', args.data_dir,
+                       f'{args.dataset}_T-{args.T}_init-{args.n_init_data}_rand-{args.seed}.png')
+          )
