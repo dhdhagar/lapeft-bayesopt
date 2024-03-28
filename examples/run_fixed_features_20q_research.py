@@ -130,7 +130,7 @@ def run_bayesopt(dataset, n_init_data=5, T=26, device='cpu', randseed=1):
     features, targets = load_features(dataset)
 
     # Shuffle since some .csv datasets are ordered by the objective values
-    features, targets = skshuffle(features, targets, random_state=randseed)
+    features, targets, pd_dataset = skshuffle(features, targets, dataset['pd_dataset'], random_state=randseed)
     feature_dim = features[0].shape[-1]
     ground_truth_max = torch.tensor(targets).flatten().max()
 
@@ -144,6 +144,9 @@ def run_bayesopt(dataset, n_init_data=5, T=26, device='cpu', randseed=1):
             continue
         train_x.append(features.pop(idx))
         train_y.append(targets.pop(idx))
+        pd_dataset = pd_dataset.T
+        pd_pop = pd_dataset.pop(idx)
+        pd_dataset = pd_dataset.T
     train_x, train_y = torch.stack(train_x), torch.stack(train_y)
 
     # Surrogate
@@ -168,7 +171,7 @@ def run_bayesopt(dataset, n_init_data=5, T=26, device='cpu', randseed=1):
     best_y = train_y.max().item() # Current best f(x) from the initial dataset
     pbar = tqdm.trange(T)
     pbar.set_description(
-        f'[Best f(x) = {helpers.y_transform(best_y, MAXIMIZATION):.3f}]'
+        f'[Best f(x="{pd_dataset[pd_dataset["Similarity"]>=1]["Word"][0]}") = {helpers.y_transform(best_y, MAXIMIZATION):.3f}]'
     )
 
     # To store the logged best f(x) over time
@@ -201,6 +204,9 @@ def run_bayesopt(dataset, n_init_data=5, T=26, device='cpu', randseed=1):
         acq_vals = torch.cat(acq_vals, dim=0).cpu().squeeze()
         idx_best = torch.argmax(acq_vals).item()
         new_x, new_y = features.pop(idx_best), targets.pop(idx_best)
+        pd_dataset = pd_dataset.T
+        pd_pop = pd_dataset.pop(idx_best)
+        pd_dataset = pd_dataset.T
 
         # Update the current best y
         if new_y.item() > best_y:
@@ -209,8 +215,8 @@ def run_bayesopt(dataset, n_init_data=5, T=26, device='cpu', randseed=1):
         # Remember that the cached features are always in maximization format.
         # So here, we transform it back if necessary.
         pbar.set_description(
-            f'[Best f(x) = {helpers.y_transform(best_y, MAXIMIZATION):.3f}, '
-            + f'curr f(x) = {helpers.y_transform(new_y.item(), MAXIMIZATION):.3f}]'
+            f'[Best f(x="{pd_dataset[pd_dataset["Similarity"]>=1]["Word"][0]}") = {helpers.y_transform(best_y, MAXIMIZATION):.3f}, '
+            + f'curr f(x="{pd_pop["Word"]}") = {helpers.y_transform(new_y.item(), MAXIMIZATION):.3f}]'
         )
 
         # Concatenate the newly acquired (x, y) and then update the surrogate
