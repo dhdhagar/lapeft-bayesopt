@@ -42,7 +42,7 @@ class Parser(argparse.ArgumentParser):
             "--T", type=int, default=20
         )
         self.add_argument(
-            "--n_runs", type=int, default=1
+            "--n_seeds", type=int, default=1
         )
         self.add_argument(
             "--interactive", action="store_true",
@@ -273,7 +273,7 @@ if __name__ == '__main__':
     os.makedirs(dataset['cache_path'], exist_ok=True)
 
     all_results = []
-    for i in range(args.n_runs):
+    for i in range(args.n_seeds):
         seed = args.seed + i
         results = run_bayesopt(dataset, n_init_data=args.n_init_data, T=args.T, randseed=seed)
         plot(results, seed=seed)
