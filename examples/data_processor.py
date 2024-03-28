@@ -58,3 +58,26 @@ class MultiRedoxDataProcessor(DataProcessor):
 
     def _get_columns_to_remove(self) -> List[str]:
         return ['Entry Number', 'File Name', 'SMILES', 'HOMO', 'Ered', 'Gsol', 'Absorption Wavelength']
+
+class TQuestResearchDataProcessor(DataProcessor):
+    """
+    RangeIndex: 26 entries, 0 to 25
+    Data columns (total 3 columns):
+    #   Column                 Non-Null Count  Dtype
+    --  ------                 --------------  -----
+    0   Entry Number           26 non-null     int64
+    2   Word                   26 non-null     object
+    3   Similarity             26 non-null     float64
+    dtypes: float64(), int64(1), object(1)
+
+    Objective: Maximize similarity
+    """
+    def __init__(self, prompt_builder, tokenizer):
+        super().__init__(prompt_builder=prompt_builder, num_outputs=1, tokenizer=tokenizer)
+        self.x_col = 'Word'
+        self.target_col = 'Similarity'
+        self.obj_str = 'similarity'
+        self.maximization = True
+
+    def _get_columns_to_remove(self) -> List[str]:
+        return ['Entry Number', 'Word', 'Similarity']

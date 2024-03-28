@@ -1,0 +1,27 @@
+Entry Number,Word,Similarity
+0,research,1.0
+1,science,0.18516
+2,data,0.1561
+3,engineering,0.12512
+4,learning,0.11688
+5,intelligence,0.11587
+6,computer,0.09971
+7,programming,0.09969
+8,translation,0.08873
+9,network,0.08435
+10,language,0.08361
+11,classification,0.08333
+12,artificial,0.0701
+13,algorithm,0.06917
+14,model,0.06858
+15,transformation,0.06736
+16,world,0.06519
+17,reduction,0.06477
+18,sequence,0.06282
+19,attention,0.06251
+20,neural,0.05865
+21,machine,0.05699
+22,hello,0.05346
+23,generation,0.0396
+24,embedding,0.00635
+25,Face,-0.01447

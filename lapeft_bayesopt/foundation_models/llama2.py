@@ -24,9 +24,14 @@ class Llama2Regressor(BaseLLMRegressor):
         self.config = config
         self.feature_extractor = feature_extractor
 
-    def forward_features(self, data):
-        input_ids = data['input_ids']
-        device = next(self.parameters()).device
-        input_ids = input_ids.to(device, non_blocking=True)
-        feat = self.feature_extractor(input_ids)[0]
-        return feat
+    def forward_features(self, data, embeddings=False):
+        if not embeddings:
+            input_ids = data['input_ids']
+            device = next(self.parameters()).device
+            input_ids = input_ids.to(device, non_blocking=True)
+            feat = self.feature_extractor(input_ids)[0]
+            return feat
+        else:
+            # Added for twenty-questions experiments
+            token_id = data['input_ids']
+            return self.feature_extractor.get_input_embeddings().weight.detach()[token_id]

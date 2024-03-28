@@ -10,25 +10,23 @@ import matplotlib.pyplot as plt
 # Non-finetuned surrogates. The finetuned surrogates are in lapeft_bayesopt.surrogates
 from fixed_feat_surrogate import LaplaceBoTorch
 
-from lapeft_bayesopt.foundation_models.t5 import T5Regressor
-from lapeft_bayesopt.foundation_models.utils import get_t5_tokenizer
+from lapeft_bayesopt.foundation_models.llama2 import Llama2Regressor
+from lapeft_bayesopt.foundation_models.utils import get_llama2_tokenizer
 from lapeft_bayesopt.utils.acqf import thompson_sampling
 from lapeft_bayesopt.utils import helpers
 
 # Our self-defined problems, using the format provided by lapeft-bayesopt
-from data_processor import RedoxDataProcessor
+from data_processor import TQuestResearchDataProcessor
 from prompting import MyPromptBuilder
 
 
 def main():
-    pd_dataset = pd.read_csv('examples/data/redox_mer.csv')
+    pd_dataset = pd.read_csv('examples/data/research.csv')
     dataset = {
         'pd_dataset': pd_dataset,
-        'smiles_col': 'SMILES',
-        'obj_col': 'Ered',
-        'maximization': False,
-        'cache_path': f'examples/data/cache/redox-mer/',
-        'opt_val': pd_dataset['Ered'].min()
+        'maximization': True,
+        'cache_path': f'examples/data/cache/research/',
+        'opt_val': pd_dataset['Similarity'].max()
     }
 
     results = run_bayesopt(dataset, n_init_data=10, T=30, randseed=9999)
@@ -40,6 +38,8 @@ def main():
     plt.xlabel(r'$t$')
     plt.ylabel(r'Objective ($\downarrow$)')
     plt.show()
+    plt.savefig('examples/data/out_research.png')
+    print('Saved plot at examples/data/out_research.png')
 
 
 def load_features(dataset):
@@ -50,8 +50,6 @@ def load_features(dataset):
     """
     pd_dataset = dataset['pd_dataset']
     CACHE_PATH = dataset['cache_path']
-    SMILES_COL = dataset['smiles_col']
-    OBJ_COL = dataset['obj_col']
     MAXIMIZATION = dataset['maximization']
 
     # If cache exists then just load it, otherwise compute the features
@@ -60,9 +58,9 @@ def load_features(dataset):
         targets = torch.load(f'{CACHE_PATH}/cached_targets.bin')
     else:
         # Use the chemistry-specific T5 LLM of Christofidellis et al., 2023
-        tokenizer = get_t5_tokenizer('GT4SD/multitask-text-and-chemistry-t5-base-augm')
-        llm_feat_extractor = T5Regressor(
-            kind='GT4SD/multitask-text-and-chemistry-t5-base-augm',
+        tokenizer = get_llama2_tokenizer('llama-2-7b')
+        llm_feat_extractor = Llama2Regressor(
+            kind='llama-2-7b',
             tokenizer=tokenizer
         )
 
@@ -73,15 +71,15 @@ def load_features(dataset):
 
         # Here, we use the raw SMILES string as the input to the LLM
         prompt_builder = MyPromptBuilder(kind='just-smiles')
-        data_processor = RedoxDataProcessor(prompt_builder, tokenizer)
-        dataloader = data_processor.get_dataloader(pd_dataset, shuffle=False)
+        data_processor = TQuestResearchDataProcessor(prompt_builder, tokenizer)
+        dataloader = data_processor.get_dataloader(pd_dataset, shuffle=False, token_id_only=True)
 
         # Forward pass through the LLM, take the aggregate (over sequence dimension)
         # of the last transformer embeddings/features
         features, targets = [], []
         for data in tqdm.tqdm(dataloader):
             with torch.no_grad():
-                feat = llm_feat_extractor.forward_features(data)
+                feat = llm_feat_extractor.forward_features(data, embeddings=True)
 
             features += list(feat.cpu())
 
@@ -96,7 +94,7 @@ def load_features(dataset):
     return features, targets
 
 
-def run_bayesopt(dataset, n_init_data=10, T=30, device='cpu', randseed=1):
+def run_bayesopt(dataset, n_init_data=5, T=26, device='cpu', randseed=1):
     np.random.seed(randseed)
     torch.manual_seed(randseed)
 
