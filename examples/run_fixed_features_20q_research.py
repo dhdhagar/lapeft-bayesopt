@@ -57,6 +57,7 @@ def main():
         'pd_dataset': pd_dataset,
         'maximization': True,
         'cache_path': os.path.join(args.data_dir, f'cache/{args.dataset}/'),
+        'opt_x': pd_dataset['Word'][pd_dataset['Similarity'].argmax()],
         'opt_val': pd_dataset['Similarity'].max()
     }
     os.makedirs(dataset['cache_path'], exist_ok=True)
@@ -69,7 +70,7 @@ def main():
     plt.plot(t, results)
     plt.xlabel(r'$t$')
     plt.ylabel(r'Objective ($\uparrow$)')
-    plt.show()
+    plt.title(f"steps={results['steps_to_opt']}, best_x={results['best_x']}, best_y={results['best_y']}")
     os.makedirs(os.path.join('outputs', args.data_dir), exist_ok=True)
     plt.savefig(os.path.join('outputs', args.data_dir,
                              f'{args.dataset}_T-{args.T}_init-{args.n_init_data}_rand-{args.seed}.png'))
@@ -144,7 +145,7 @@ def run_bayesopt(dataset, n_init_data=5, T=26, device='cpu', randseed=1):
 
     # Obtain a small initial dataset for BO.
     # There are different strategy for this. Here, we use a simple random sampling.
-    train_x, train_y = [], []
+    train_x, train_y, train_x_labels = [], [], []
     while len(train_x) < n_init_data:
         idx = np.random.randint(len(features))
         # Make sure that the optimum is not included
@@ -154,6 +155,7 @@ def run_bayesopt(dataset, n_init_data=5, T=26, device='cpu', randseed=1):
         train_y.append(targets.pop(idx))
         pd_dataset = pd_dataset.T
         pd_pop = pd_dataset.pop(idx)
+        train_x_labels.append(pd_pop["Word"])
         pd_dataset = pd_dataset.T.reset_index(drop=True)
     train_x, train_y = torch.stack(train_x), torch.stack(train_y)
 
@@ -178,7 +180,7 @@ def run_bayesopt(dataset, n_init_data=5, T=26, device='cpu', randseed=1):
     # Prepare for the BO loop
     MAXIMIZATION = dataset['maximization']
     best_y = train_y.max().item()  # Current best f(x) from the initial dataset
-    best_x = None
+    best_x = train_x_labels[train_y.argmax()]
     pbar = tqdm.trange(T)
     pbar.set_description(
         f'[Best f(x) = {helpers.y_transform(best_y, MAXIMIZATION):.3f}]'
@@ -186,6 +188,7 @@ def run_bayesopt(dataset, n_init_data=5, T=26, device='cpu', randseed=1):
 
     # To store the logged best f(x) over time
     trace_best_y = [helpers.y_transform(best_y, MAXIMIZATION)]
+    steps_to_opt = -1
 
     # The BayesOpt loop --- or just use BoTorch since LaplaceBoTorch is compatible
     for t in pbar:
@@ -222,6 +225,8 @@ def run_bayesopt(dataset, n_init_data=5, T=26, device='cpu', randseed=1):
         if new_y.item() > best_y:
             best_y = new_y.item()
             best_x = pd_pop["Word"]
+            if best_y == ground_truth_max:
+                steps_to_opt = t + 1
 
         # Remember that the cached features are always in maximization format.
         # So here, we transform it back if necessary.
@@ -236,7 +241,12 @@ def run_bayesopt(dataset, n_init_data=5, T=26, device='cpu', randseed=1):
         # Log the current best f(x) value
         trace_best_y.append(helpers.y_transform(best_y, MAXIMIZATION))
 
-    return trace_best_y
+        if best_y == ground_truth_max:
+            print(f'Optimum found at step {steps_to_opt}')
+        else:
+            print(f'Optimum not found. Best value so far: {best_x} ({best_y})')
+
+    return {"trace": trace_best_y, "steps_to_opt": steps_to_opt, "best_x": best_x, "best_y": best_y}
 
 
 if __name__ == '__main__':
