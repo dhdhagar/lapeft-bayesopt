@@ -235,7 +235,7 @@ def run_bayesopt(dataset, n_init_data=5, T=26, device='cpu', randseed=1):
             "best_y_rand": best_y_rand}
 
 
-def plot(results, seed=args.seed):
+def plot(results, seed):
     # Plot
     t = np.arange(len(results['trace']))
     plt.axhline(dataset['opt_val'], color='black', linestyle='dashed')
