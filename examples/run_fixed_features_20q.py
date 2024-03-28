@@ -186,15 +186,14 @@ def run_bayesopt(dataset, n_init_data=5, T=26, device='cpu', randseed=1):
         idx_best = torch.argmax(acq_vals).item()
 
         # Random baseline
-        if args.rand_baseline:
-            idx_rand = np.random.randint(len(features))
-            new_x_rand, new_y_rand = features[idx_rand], targets[idx_rand]
-            if new_y_rand.item() > best_y_rand:
-                best_y_rand = new_y_rand.item()
-                best_x_rand = pd_dataset['Word'][idx_rand]
-                if best_y_rand == ground_truth_max:
-                    steps_to_opt_rand = t + 1
-            trace_best_y_rand.append(helpers.y_transform(best_y_rand, MAXIMIZATION))
+        idx_rand = np.random.randint(len(features))
+        new_x_rand, new_y_rand = features[idx_rand], targets[idx_rand]
+        if new_y_rand.item() > best_y_rand:
+            best_y_rand = new_y_rand.item()
+            best_x_rand = pd_dataset['Word'][idx_rand]
+            if best_y_rand == ground_truth_max:
+                steps_to_opt_rand = t + 1
+        trace_best_y_rand.append(helpers.y_transform(best_y_rand, MAXIMIZATION))
 
         # BO
         new_x, new_y = features.pop(idx_best), targets.pop(idx_best)
