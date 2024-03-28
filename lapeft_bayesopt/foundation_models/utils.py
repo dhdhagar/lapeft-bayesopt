@@ -32,6 +32,7 @@ def extract_last_llm_features(feats, input_ids, eos_token_id):
 def get_llama2_tokenizer(kind):
     kind = f'meta-llama/{kind.capitalize()}-hf'
     tokenizer = LlamaTokenizer.from_pretrained(kind)
+    tokenizer.pad_token = tokenizer.eos_token
     return tokenizer
 
 
