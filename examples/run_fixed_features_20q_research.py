@@ -21,10 +21,13 @@ from prompting import MyPromptBuilder
 
 import argparse
 
+
 class Parser(argparse.ArgumentParser):
     def __init__(self):
         super().__init__()
-
+        self.add_argument(
+            "--data_dir", type=str, default='examples/data'
+        )
         self.add_argument(
             "--dataset", type=str, default='research'
         )
@@ -41,6 +44,7 @@ class Parser(argparse.ArgumentParser):
             "--interactive", action="store_true",
         )
 
+
 def main():
     parser = Parser()
     global args
@@ -48,11 +52,11 @@ def main():
     print("Script arguments:")
     print(args.__dict__)
 
-    pd_dataset = pd.read_csv(f'examples/data/{args.dataset}.csv')
+    pd_dataset = pd.read_csv(os.path.join(data_dir, f'{args.dataset}.csv'))
     dataset = {
         'pd_dataset': pd_dataset,
         'maximization': True,
-        'cache_path': f'examples/data/cache/{args.dataset}/',
+        'cache_path': os.path.join(data_dir, f'cache/{args.dataset}/'),
         'opt_val': pd_dataset['Similarity'].max()
     }
     os.makedirs(dataset['cache_path'], exist_ok=True)
@@ -66,9 +70,13 @@ def main():
     plt.xlabel(r'$t$')
     plt.ylabel(r'Objective ($\uparrow$)')
     plt.show()
-    os.makedirs('outputs', exist_ok=True)
-    plt.savefig(f'outputs/{args.dataset}_T-{args.T}_init-{args.n_init_data}_rand-{args.seed}.png')
-    print(f'Saved plot at outputs/{args.dataset}_T-{args.T}_init-{args.n_init_data}_rand-{args.seed}.png')
+    os.makedirs(os.path.join('outputs', args.data_dir), exist_ok=True)
+    plt.savefig(os.path.join('outputs', args.data_dir,
+                             f'{args.dataset}_T-{args.T}_init-{args.n_init_data}_rand-{args.seed}.png'))
+    print(f'Saved plot at ' +
+          os.path.join('outputs', args.data_dir,
+                       f'{args.dataset}_T-{args.T}_init-{args.n_init_data}_rand-{args.seed}.png')
+          )
 
 
 def load_features(dataset):
@@ -160,6 +168,7 @@ def run_bayesopt(dataset, n_init_data=5, T=26, device='cpu', randseed=1):
             # For multiobjective problems, change 1 -> num_of_objectives
             torch.nn.Linear(50, 1)
         )
+
     # Or just use https://github.com/wiseodd/laplace-bayesopt for full BoTorch compatibility
     model = LaplaceBoTorch(
         get_net, train_x, train_y, noise_var=0.001, hess_factorization='kron'
@@ -168,7 +177,7 @@ def run_bayesopt(dataset, n_init_data=5, T=26, device='cpu', randseed=1):
 
     # Prepare for the BO loop
     MAXIMIZATION = dataset['maximization']
-    best_y = train_y.max().item() # Current best f(x) from the initial dataset
+    best_y = train_y.max().item()  # Current best f(x) from the initial dataset
     best_x = None
     pbar = tqdm.trange(T)
     pbar.set_description(
