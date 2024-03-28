@@ -153,6 +153,9 @@ def run_bayesopt(dataset, n_init_data=5, T=26, device='cpu', randseed=1):
 
     # To store the logged best f(x) over time
     trace_best_y = [helpers.y_transform(best_y, MAXIMIZATION)]
+    # Also track a random sampling baseline
+    best_y_rand = best_y
+    trace_best_y_rand = [helpers.y_transform(best_y, MAXIMIZATION)]
     steps_to_opt = -1
 
     # The BayesOpt loop --- or just use BoTorch since LaplaceBoTorch is compatible
@@ -175,12 +178,25 @@ def run_bayesopt(dataset, n_init_data=5, T=26, device='cpu', randseed=1):
             f_mean, f_var = posterior.mean, posterior.variance
 
             # Feel free to use different acquisition function
-            acq_vals.append(thompson_sampling(f_mean, f_var))
+            acq_vals.append(thompson_sampling(f_mean, f_var))  # TODO: try other acquisition functions
 
         # Pick a molecule (a row in the current dataset) that maximizes the acquisition.
         # Also remove it from the pool (hence we use .pop)
         acq_vals = torch.cat(acq_vals, dim=0).cpu().squeeze()
         idx_best = torch.argmax(acq_vals).item()
+
+        # Random baseline
+        if args.rand_baseline:
+            idx_rand = np.random.randint(len(features))
+            new_x_rand, new_y_rand = features[idx_rand], targets[idx_rand]
+            if new_y_rand.item() > best_y_rand:
+                best_y_rand = new_y_rand.item()
+                best_x_rand = pd_dataset['Word'][idx_rand]
+                if best_y_rand == ground_truth_max:
+                    steps_to_opt_rand = t + 1
+            trace_best_y_rand.append(helpers.y_transform(best_y_rand, MAXIMIZATION))
+
+        # BO
         new_x, new_y = features.pop(idx_best), targets.pop(idx_best)
         pd_dataset = pd_dataset.T
         pd_pop = pd_dataset.pop(idx_best)
@@ -211,7 +227,9 @@ def run_bayesopt(dataset, n_init_data=5, T=26, device='cpu', randseed=1):
     else:
         print(f'Optimum not found. Best value so far: {best_x} ({round(best_y, 3)})')
 
-    return {"trace": trace_best_y, "steps_to_opt": steps_to_opt, "best_x": best_x, "best_y": best_y}
+    return {"trace": trace_best_y, "steps_to_opt": steps_to_opt, "best_x": best_x, "best_y": best_y,
+            "trace_rand": trace_best_y_rand, "steps_to_opt_rand": steps_to_opt_rand, "best_x_rand": best_x_rand,
+            "best_y_rand": best_y_rand}
 
 
 if __name__ == '__main__':
@@ -237,6 +255,8 @@ if __name__ == '__main__':
     t = np.arange(len(results['trace']))
     plt.axhline(dataset['opt_val'], color='black', linestyle='dashed')
     plt.plot(t, results['trace'])
+    plt.plot(t, results['trace_rand'])
+    plt.legend(["BO", "Random"])
     plt.xlabel(r'$t$')
     plt.ylabel(r'Objective ($\uparrow$)')
     plt.title(f"steps={results['steps_to_opt']}, best_x={results['best_x']}, best_y={results['best_y']}")
