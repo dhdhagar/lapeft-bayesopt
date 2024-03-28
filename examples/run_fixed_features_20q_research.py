@@ -52,11 +52,11 @@ def main():
     print("Script arguments:")
     print(args.__dict__)
 
-    pd_dataset = pd.read_csv(os.path.join(data_dir, f'{args.dataset}.csv'))
+    pd_dataset = pd.read_csv(os.path.join(args.data_dir, f'{args.dataset}.csv'))
     dataset = {
         'pd_dataset': pd_dataset,
         'maximization': True,
-        'cache_path': os.path.join(data_dir, f'cache/{args.dataset}/'),
+        'cache_path': os.path.join(args.data_dir, f'cache/{args.dataset}/'),
         'opt_val': pd_dataset['Similarity'].max()
     }
     os.makedirs(dataset['cache_path'], exist_ok=True)
