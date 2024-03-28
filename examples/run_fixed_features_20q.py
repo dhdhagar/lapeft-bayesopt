@@ -161,6 +161,7 @@ def run_bayesopt(dataset, n_init_data=5, T=26, device='cpu', randseed=1):
     best_y_rand = best_y
     trace_best_y_rand = [helpers.y_transform(best_y, MAXIMIZATION)]
     steps_to_opt = -1
+    steps_to_opt_rand = -1
 
     # The BayesOpt loop --- or just use BoTorch since LaplaceBoTorch is compatible
     for t in pbar:
