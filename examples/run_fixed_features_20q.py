@@ -109,6 +109,7 @@ def run_bayesopt(dataset, n_init_data=5, T=26, device='cpu', randseed=1):
 
     # Shuffle since some .csv datasets are ordered by the objective values
     features, targets, pd_dataset = skshuffle(features, targets, dataset['pd_dataset'], random_state=randseed)
+    pd_dataset = pd_dataset.reset_index(drop=True)
     feature_dim = features[0].shape[-1]
     ground_truth_max = torch.tensor(targets).flatten().max()
 
