@@ -146,7 +146,7 @@ def run_bayesopt(dataset, n_init_data=5, T=26, device='cpu', randseed=1):
         train_y.append(targets.pop(idx))
         pd_dataset = pd_dataset.T
         pd_pop = pd_dataset.pop(idx)
-        pd_dataset = pd_dataset.T
+        pd_dataset = pd_dataset.T.reset_index(drop=True)
     train_x, train_y = torch.stack(train_x), torch.stack(train_y)
 
     # Surrogate
@@ -207,7 +207,7 @@ def run_bayesopt(dataset, n_init_data=5, T=26, device='cpu', randseed=1):
         new_x, new_y = features.pop(idx_best), targets.pop(idx_best)
         pd_dataset = pd_dataset.T
         pd_pop = pd_dataset.pop(idx_best)
-        pd_dataset = pd_dataset.T
+        pd_dataset = pd_dataset.T.reset_index(drop=True)
 
         # Update the current best y
         if new_y.item() > best_y:
