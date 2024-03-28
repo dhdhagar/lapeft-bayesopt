@@ -257,7 +257,7 @@ if __name__ == '__main__':
     print("Script arguments:")
     print(args.__dict__)
     global RUN_ID
-    RUN_ID = str(int(time.time())) if args.run_id is None else str(args.run_id)
+    RUN_ID = str(int(time.time()))
     global out_dir
     out_dir = os.path.join("outputs", RUN_ID)
     os.makedirs(out_dir, exist_ok=True)
