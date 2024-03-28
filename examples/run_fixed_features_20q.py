@@ -158,6 +158,7 @@ def run_bayesopt(dataset, n_init_data=5, T=26, device='cpu', randseed=1):
     # To store the logged best f(x) over time
     trace_best_y = [helpers.y_transform(best_y, MAXIMIZATION)]
     # Also track a random sampling baseline
+    best_x_rand = best_x
     best_y_rand = best_y
     trace_best_y_rand = [helpers.y_transform(best_y, MAXIMIZATION)]
     steps_to_opt = -1
@@ -263,18 +264,17 @@ if __name__ == '__main__':
     out_dir = os.path.join("outputs", RUN_ID)
     os.makedirs(out_dir, exist_ok=True)
 
-    pd_dataset = pd.read_csv(os.path.join(args.data_dir, f'{args.dataset}.csv'))
-    dataset = {
-        'pd_dataset': pd_dataset,
-        'maximization': True,
-        'cache_path': os.path.join(args.data_dir, f'cache/{args.dataset}/'),
-        'opt_x': pd_dataset['Word'][pd_dataset['Similarity'].argmax()],
-        'opt_val': pd_dataset['Similarity'].max()
-    }
-    os.makedirs(dataset['cache_path'], exist_ok=True)
-
     all_results = []
     for i in range(args.n_seeds):
+        pd_dataset = pd.read_csv(os.path.join(args.data_dir, f'{args.dataset}.csv'))
+        dataset = {
+            'pd_dataset': pd_dataset,
+            'maximization': True,
+            'cache_path': os.path.join(args.data_dir, f'cache/{args.dataset}/'),
+            'opt_x': pd_dataset['Word'][pd_dataset['Similarity'].argmax()],
+            'opt_val': pd_dataset['Similarity'].max()
+        }
+        os.makedirs(dataset['cache_path'], exist_ok=True)
         seed = args.seed + i
         results = run_bayesopt(dataset, n_init_data=args.n_init_data, T=args.T, randseed=seed)
         plot(results, seed=seed)
