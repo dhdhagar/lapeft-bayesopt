@@ -19,27 +19,56 @@ from lapeft_bayesopt.utils import helpers
 from data_processor import TQuestResearchDataProcessor
 from prompting import MyPromptBuilder
 
+import argparse
+
+class Parser(argparse.ArgumentParser):
+    def __init__(self):
+        super().__init__()
+
+        self.add_argument(
+            "--dataset", type=str, default='research'
+        )
+        self.add_argument(
+            "--seed", type=int, default=9999
+        )
+        self.add_argument(
+            "--n_init_data", type=int, default=2
+        )
+        self.add_argument(
+            "--T", type=int, default=20
+        )
+        self.add_argument(
+            "--interactive", action="store_true",
+        )
 
 def main():
-    pd_dataset = pd.read_csv('examples/data/research.csv')
+    parser = Parser()
+    global args
+    args = parser.parse_args()
+    print("Script arguments:")
+    print(args.__dict__)
+
+    pd_dataset = pd.read_csv(f'examples/data/{args.dataset}.csv')
     dataset = {
         'pd_dataset': pd_dataset,
         'maximization': True,
-        'cache_path': f'examples/data/cache/research/',
+        'cache_path': f'examples/data/cache/{args.dataset}/',
         'opt_val': pd_dataset['Similarity'].max()
     }
+    os.makedirs(dataset['cache_path'], exist_ok=True)
 
-    results = run_bayesopt(dataset, n_init_data=2, T=20, randseed=9999)
+    results = run_bayesopt(dataset, n_init_data=args.n_init_data, T=args.T, randseed=args.seed)
 
     # Plot
     t = np.arange(len(results))
     plt.axhline(dataset['opt_val'], color='black', linestyle='dashed')
     plt.plot(t, results)
     plt.xlabel(r'$t$')
-    plt.ylabel(r'Objective ($\downarrow$)')
+    plt.ylabel(r'Objective ($\uparrow$)')
     plt.show()
-    plt.savefig('examples/data/out_research.png')
-    print('Saved plot at examples/data/out_research.png')
+    os.makedirs('outputs', exist_ok=True)
+    plt.savefig(f'outputs/{args.dataset}_T-{args.T}_init-{args.n_init_data}_rand-{args.seed}.png')
+    print(f'Saved plot at outputs/{args.dataset}_T-{args.T}_init-{args.n_init_data}_rand-{args.seed}.png')
 
 
 def load_features(dataset):
