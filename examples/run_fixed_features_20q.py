@@ -5,6 +5,7 @@ import torch.utils.data as data_utils
 import tqdm
 from sklearn.utils import shuffle as skshuffle
 import os
+import time
 import matplotlib.pyplot as plt
 
 # Non-finetuned surrogates. The finetuned surrogates are in lapeft_bayesopt.surrogates
@@ -39,6 +40,9 @@ class Parser(argparse.ArgumentParser):
         )
         self.add_argument(
             "--T", type=int, default=20
+        )
+        self.add_argument(
+            "--n_runs", type=int, default=1
         )
         self.add_argument(
             "--interactive", action="store_true",
@@ -231,12 +235,32 @@ def run_bayesopt(dataset, n_init_data=5, T=26, device='cpu', randseed=1):
             "best_y_rand": best_y_rand}
 
 
+def plot(results, seed=args.seed):
+    # Plot
+    t = np.arange(len(results['trace']))
+    plt.axhline(dataset['opt_val'], color='black', linestyle='dashed')
+    plt.plot(t, results['trace'])
+    plt.plot(t, results['trace_rand'])
+    plt.legend(["BO", "Random"])
+    plt.xlabel(r'$t$')
+    plt.ylabel(r'Objective ($\uparrow$)')
+    plt.title(f"steps={results['steps_to_opt']}, best_x={results['best_x']}, best_y={results['best_y']}")
+    plt.savefig(os.path.join(out_dir, f'{args.dataset}_T-{args.T}_init-{args.n_init_data}_rand-{args.seed}_seed-{seed}.png'))
+    print(f'Saved plot at ' +
+          os.path.join(out_dir, f'{args.dataset}_T-{args.T}_init-{args.n_init_data}_rand-{args.seed}_seed-{seed}.png'))
+
+
 if __name__ == '__main__':
     parser = Parser()
     global args
     args = parser.parse_args()
     print("Script arguments:")
     print(args.__dict__)
+    global RUN_ID
+    RUN_ID = str(int(time.time())) if args.run_id is None else str(args.run_id)
+    global out_dir
+    out_dir = os.path.join("outputs", RUN_ID)
+    os.makedirs(out_dir, exist_ok=True)
 
     pd_dataset = pd.read_csv(os.path.join(args.data_dir, f'{args.dataset}.csv'))
     dataset = {
@@ -248,21 +272,9 @@ if __name__ == '__main__':
     }
     os.makedirs(dataset['cache_path'], exist_ok=True)
 
-    results = run_bayesopt(dataset, n_init_data=args.n_init_data, T=args.T, randseed=args.seed)
-
-    # Plot
-    t = np.arange(len(results['trace']))
-    plt.axhline(dataset['opt_val'], color='black', linestyle='dashed')
-    plt.plot(t, results['trace'])
-    plt.plot(t, results['trace_rand'])
-    plt.legend(["BO", "Random"])
-    plt.xlabel(r'$t$')
-    plt.ylabel(r'Objective ($\uparrow$)')
-    plt.title(f"steps={results['steps_to_opt']}, best_x={results['best_x']}, best_y={results['best_y']}")
-    os.makedirs(os.path.join('outputs', args.data_dir), exist_ok=True)
-    plt.savefig(os.path.join('outputs', args.data_dir,
-                             f'{args.dataset}_T-{args.T}_init-{args.n_init_data}_rand-{args.seed}.png'))
-    print(f'Saved plot at ' +
-          os.path.join('outputs', args.data_dir,
-                       f'{args.dataset}_T-{args.T}_init-{args.n_init_data}_rand-{args.seed}.png')
-          )
+    all_results = []
+    for i in range(args.n_runs):
+        seed = args.seed + i
+        results = run_bayesopt(dataset, n_init_data=args.n_init_data, T=args.T, randseed=seed)
+        plot(results, seed=seed)
+        all_results.append(results)
