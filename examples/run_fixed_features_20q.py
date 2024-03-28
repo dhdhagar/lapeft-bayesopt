@@ -240,6 +240,7 @@ def run_bayesopt(dataset, n_init_data=5, T=26, device='cpu', randseed=1):
 def plot(results, seed):
     # Plot
     t = np.arange(len(results['trace']))
+    plt.clf()
     plt.axhline(dataset['opt_val'], color='black', linestyle='dashed')
     plt.plot(t, results['trace'])
     plt.plot(t, results['trace_rand'])
