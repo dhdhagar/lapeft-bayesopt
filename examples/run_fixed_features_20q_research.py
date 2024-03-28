@@ -65,7 +65,7 @@ def load_features(dataset):
         )
 
         # Need CUDA otherwise will be so slow!
-        llm_feat_extractor.cuda()
+        # llm_feat_extractor.cuda()
         llm_feat_extractor.eval()
         llm_feat_extractor.freeze_params()
 
