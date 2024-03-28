@@ -29,7 +29,7 @@ def main():
         'opt_val': pd_dataset['Similarity'].max()
     }
 
-    results = run_bayesopt(dataset, n_init_data=5, T=26, randseed=9999)
+    results = run_bayesopt(dataset, n_init_data=2, T=26, randseed=9999)
 
     # Plot
     t = np.arange(len(results))
