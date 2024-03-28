@@ -241,7 +241,7 @@ def plot(results, seed=args.seed):
     plt.axhline(dataset['opt_val'], color='black', linestyle='dashed')
     plt.plot(t, results['trace'])
     plt.plot(t, results['trace_rand'])
-    plt.legend(["BO", "Random"])
+    plt.legend(["Optimal", "BO", "Random"])
     plt.xlabel(r'$t$')
     plt.ylabel(r'Objective ($\uparrow$)')
     plt.title(f"steps={results['steps_to_opt']}, best_x={results['best_x']}, best_y={results['best_y']}")
