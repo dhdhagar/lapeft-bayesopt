@@ -169,9 +169,10 @@ def run_bayesopt(dataset, n_init_data=5, T=26, device='cpu', randseed=1):
     # Prepare for the BO loop
     MAXIMIZATION = dataset['maximization']
     best_y = train_y.max().item() # Current best f(x) from the initial dataset
+    best_x = None
     pbar = tqdm.trange(T)
     pbar.set_description(
-        f'[Best f(x="{pd_dataset[pd_dataset["Similarity"]>=1]["Word"][0]}") = {helpers.y_transform(best_y, MAXIMIZATION):.3f}]'
+        f'[Best f(x) = {helpers.y_transform(best_y, MAXIMIZATION):.3f}]'
     )
 
     # To store the logged best f(x) over time
@@ -211,11 +212,12 @@ def run_bayesopt(dataset, n_init_data=5, T=26, device='cpu', randseed=1):
         # Update the current best y
         if new_y.item() > best_y:
             best_y = new_y.item()
+            best_x = pd_pop["Word"]
 
         # Remember that the cached features are always in maximization format.
         # So here, we transform it back if necessary.
         pbar.set_description(
-            f'[Best f(x="{pd_dataset[pd_dataset["Similarity"]>=1]["Word"][0]}") = {helpers.y_transform(best_y, MAXIMIZATION):.3f}, '
+            f'[Best f(x="{best_x}") = {helpers.y_transform(best_y, MAXIMIZATION):.3f}, '
             + f'curr f(x="{pd_pop["Word"]}") = {helpers.y_transform(new_y.item(), MAXIMIZATION):.3f}]'
         )
 
