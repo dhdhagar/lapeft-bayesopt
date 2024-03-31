@@ -364,11 +364,12 @@ if __name__ == '__main__':
             'Similarity': targets.tolist()
         }).to_csv(os.path.join(out_dir, f'{test_word}_{args.prompt_strategy}_{args.feat_extraction_strategy}.csv'),
                   sep='\t', index=False)
-        print(f'Saved word-specific dataset at ' + os.path.join(out_dir,
+        print(f'Saved word-specific dataset to ' + os.path.join(out_dir,
                                                                 f'{test_word}_{args.prompt_strategy}_{args.feat_extraction_strategy}.csv'))
 
     # Run BO over multiple seeds
     all_results = []
+    start_time = time.time()
     for i in range(args.n_seeds):
         seed = args.seed + i
         print(f'\nSeed {seed}:')
@@ -377,6 +378,8 @@ if __name__ == '__main__':
                                device='cuda' if args.cuda else 'cpu')
         plot(results)
         all_results.append(results)
+    end_time = time.time()
+    elapsed_time = end_time - start_time
 
     # Aggregate results
     all_trace_y = np.stack([res["results"]["trace_y"] for res in all_results])
@@ -389,6 +392,7 @@ if __name__ == '__main__':
         "opt_val": all_results[-1]["opt_val"],
         "prompt_strategy": args.prompt_strategy,
         "feat_extraction_strategy": args.feat_extraction_strategy,
+        "elapsed_time": elapsed_time,
         "results": {
             "trace_y_mean": list(all_trace_y.mean(axis=0)),
             "trace_y_std": list(all_trace_y.std(axis=0)),
