@@ -367,7 +367,7 @@ if __name__ == '__main__':
         pd.DataFrame({
             'Words': pd_dataset['Words'],
             'Similarity': targets.tolist()
-        }).to_csv(os.path.join(out_dir,
+        }).sort_values(by=['Similarity'], ascending=False).to_csv(os.path.join(out_dir,
                                f'{test_word}_{args.prompt_strategy}_{args.feat_extraction_strategy}_{args.model}.csv'),
                   sep='\t', index=False)
         print(f'Saved word-specific dataset to ' + os.path.join(out_dir,
