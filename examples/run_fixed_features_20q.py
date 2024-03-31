@@ -40,7 +40,7 @@ class Parser(argparse.ArgumentParser):
             "--prompt_type", type=str, choices=['word', 'completion', 'instruction'], default='word'
         )
         self.add_argument(
-            "--model", type=str, choices=['t5-small', 't5-base', 'llama-2-7b', 'llama-2-13b'], default="llama2-7b"
+            "--model", type=str, choices=['t5-small', 't5-base', 'llama-2-7b', 'llama-2-13b'], default="llama-2-7b"
         )
         self.add_argument(
             "--init_strategy", type=str, choices=['random'], default="random"
