@@ -419,13 +419,15 @@ if __name__ == '__main__':
     # Add word representations and compute similarities
     features, targets = load_features(dataset=pd_dataset, test_word=test_word, test_idx=test_idx)
     if args.save_word_specific_dataset:
+        dataset_dir = 'data/twentyquestions/datasets'
+        os.makedirs(dataset_dir, exist_ok=True)
         pd.DataFrame({
             'Words': pd_dataset['Words'],
             'Similarity': targets.tolist()
-        }).sort_values(by=['Similarity'], ascending=False).to_csv(os.path.join(out_dir,
+        }).sort_values(by=['Similarity'], ascending=False).to_csv(os.path.join(dataset_dir,
                                                                                f'{test_word}_{args.prompt_strategy}_{args.feat_extraction_strategy}_{args.model}.csv'),
                                                                   sep='\t', index=False)
-        print(f'Saved word-specific dataset to ' + os.path.join(out_dir,
+        print(f'Saved word-specific dataset to ' + os.path.join(dataset_dir,
                                                                 f'{test_word}_{args.prompt_strategy}_{args.feat_extraction_strategy}_{args.model}.csv'))
 
     # Run BO over multiple seeds
