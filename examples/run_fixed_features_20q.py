@@ -38,7 +38,7 @@ class Parser(argparse.ArgumentParser):
             "--test_idx_or_word", type=str
         )
         self.add_argument(
-            "--prompt_strategy", type=str, choices=['word', 'completion', 'instruction'], default='word'
+            "--prompt_strategy", type=str, choices=['word', 'instruction'], default='word'
         )
         self.add_argument(
             "--model", type=str,

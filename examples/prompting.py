@@ -15,6 +15,6 @@ class MyPromptBuilder(PromptBuilder):
             return x
         elif self.kind == 'instruction':
             # TwentyQuestions
-            return f'The task is to find a hidden test word by guessing. The next guess is {obj_str}.'
+            return f'The task is to find a hidden test word by guessing new words. What is a word that is similar to {obj_str}? '
         else:
             return NotImplementedError
