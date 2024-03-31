@@ -115,7 +115,7 @@ def load_features(dataset, test_word, test_idx, prompt_type):
         for data in tqdm.tqdm(dataloader):
             with torch.no_grad():
                 feat = llm_feat_extractor.forward_features(data)
-
+                feat = feat[:, -1, :]  # take embedding of the last token position in the last hidden state
             features += list(feat)
 
             # # Here we transform the target so that the optimization problem
