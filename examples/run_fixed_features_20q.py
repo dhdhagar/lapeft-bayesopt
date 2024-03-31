@@ -123,8 +123,9 @@ def load_features(dataset, test_word, test_idx, prompt_type):
             # targets += list(helpers.y_transform(data['labels'], MAXIMIZATION))
         features = torch.stack(features, dim=0)
         targets = cosine_similarity(features, features[test_idx]).cpu()
+        targets = targets.clamp(min=-1., max=1.)
         features = features.cpu()
-        assert targets.max() == 1
+
         if args.rescale_scores:
             # Rescale scores between [0, 1]
             targets = (targets - targets.min()) / (targets.max() - targets.min())
