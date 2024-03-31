@@ -314,9 +314,9 @@ if __name__ == '__main__':
         test_idx = np.random.randint(len(pd_dataset))
     else:
         try:
-            test_idx = int(arg.test_idx_or_word)
+            test_idx = int(args.test_idx_or_word)
         except ValueError:
-            test_idx = pd_dataset['Word'].index(arg.test_idx_or_word)
+            test_idx = pd_dataset['Word'].index(args.test_idx_or_word)
     test_word = pd_dataset['Word'][test_idx]
     print(f"Test word: {test_word}")
 
