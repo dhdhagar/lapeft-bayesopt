@@ -58,6 +58,9 @@ class Parser(argparse.ArgumentParser):
             "--save_word_specific_dataset", action=argparse.BooleanOptionalAction, default=False
         )
         self.add_argument(
+            "--feat_extraction_strategy", type=str, choices=['last_token', 'average', 'max'], default="last_token"
+        )
+        self.add_argument(
             "--no_cache", action=argparse.BooleanOptionalAction, default=False
         )
         self.add_argument(
@@ -121,7 +124,13 @@ def load_features(dataset, test_word, test_idx, prompt_type):
         for data in tqdm.tqdm(dataloader):
             with torch.no_grad():
                 feat = llm_feat_extractor.forward_features(data)
-                feat = feat[:, -1, :]  # take embedding of the last token position in the last hidden state
+                if args.feat_extraction_strategy == 'average':
+                    feat = feat.mean(dim=1)
+                elif args.feat_extraction_strategy == 'max':
+                    feat = feat.max(dim=1).values
+                elif args.feat_extraction_strategy == 'last_token':
+                    # take embedding of the last token position in the last hidden state
+                    feat = feat[:, -1, :]
             features += list(feat)
 
         features = torch.stack(features, dim=0)
