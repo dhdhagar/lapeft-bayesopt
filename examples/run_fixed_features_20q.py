@@ -107,14 +107,14 @@ def load_features(dataset, test_word, test_idx, prompt_type):
         # Build the textual representation based on the prompt strategy
         prompt_builder = MyPromptBuilder(kind=prompt_type)
         data_processor = TwentyQuestionsDataProcessor(prompt_builder, tokenizer)
-        dataloader = data_processor.get_dataloader(dataset, shuffle=False, token_id_only=True)
+        dataloader = data_processor.get_dataloader(dataset, shuffle=False)
 
         # Forward pass through the LLM, take the aggregate (over sequence dimension)
         # of the last transformer embeddings/features
         features, targets = [], []
         for data in tqdm.tqdm(dataloader):
             with torch.no_grad():
-                feat = llm_feat_extractor.forward_features(data, embeddings=True)
+                feat = llm_feat_extractor.forward_features(data)
 
             features += list(feat)
 
