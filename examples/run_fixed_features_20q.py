@@ -89,7 +89,7 @@ def load_features(dataset, test_word, test_idx):
     """
     CACHE_FPATH = os.path.join(args.data_dir, f'cache/{args.dataset}/')
     os.makedirs(CACHE_FPATH, exist_ok=True)
-    CACHE_FNAME = f'{test_word}_{args.prompt_strategy}_{args.feat_extraction_strategy}'
+    CACHE_FNAME = f'{test_word}_{args.prompt_strategy}_{args.feat_extraction_strategy}_{args.model}'
 
     # If cache exists then just load it, otherwise compute the features
     if not args.no_cache and os.path.exists(os.path.join(CACHE_FPATH, f'{CACHE_FNAME}_feats.bin')):
@@ -289,6 +289,7 @@ def run_bayesopt(words, features, targets, test_word, n_init_data=10, T=None, se
         "opt_val": ground_truth_max,
         "prompt_strategy": args.prompt_strategy,
         "feat_extraction_strategy": args.feat_extraction_strategy,
+        "model": args.model,
         "results": {
             "trace_y": trace_best_y,
             "trace_x": trace_best_x_label,
@@ -366,10 +367,11 @@ if __name__ == '__main__':
         pd.DataFrame({
             'Words': pd_dataset['Words'],
             'Similarity': targets.tolist()
-        }).to_csv(os.path.join(out_dir, f'{test_word}_{args.prompt_strategy}_{args.feat_extraction_strategy}.csv'),
+        }).to_csv(os.path.join(out_dir,
+                               f'{test_word}_{args.prompt_strategy}_{args.feat_extraction_strategy}_{args.model}.csv'),
                   sep='\t', index=False)
         print(f'Saved word-specific dataset to ' + os.path.join(out_dir,
-                                                                f'{test_word}_{args.prompt_strategy}_{args.feat_extraction_strategy}.csv'))
+                                                                f'{test_word}_{args.prompt_strategy}_{args.feat_extraction_strategy}_{args.model}.csv'))
 
     # Run BO over multiple seeds
     all_results = []
@@ -396,7 +398,8 @@ if __name__ == '__main__':
         "opt_val": all_results[-1]["opt_val"],
         "prompt_strategy": args.prompt_strategy,
         "feat_extraction_strategy": args.feat_extraction_strategy,
-        "elapsed_time": elapsed_time,
+        "model": args.model,
+        "avg_elapsed_time": round(elapsed_time/n_seeds, 2),
         "results": {
             "trace_y_mean": list(all_trace_y.mean(axis=0)),
             "trace_y_std": list(all_trace_y.std(axis=0)),
