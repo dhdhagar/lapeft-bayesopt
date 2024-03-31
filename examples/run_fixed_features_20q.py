@@ -144,15 +144,17 @@ def get_surrogate(train_x, train_y, hidden_dim=50, activation=torch.nn.Tanh, n_o
                   noise_var=0.001, hess_factorization='kron'):
     # Or just use https://github.com/wiseodd/laplace-bayesopt for full BoTorch compatibility
     feature_dim = train_x.shape[-1]
-    net = torch.nn.Sequential(
-        torch.nn.Linear(feature_dim, hidden_dim),
-        activation(),
-        torch.nn.Linear(hidden_dim, hidden_dim),
-        activation(),
-        torch.nn.Linear(hidden_dim, n_objs)
-    )
+
+    def get_net():  # needs to be a callable for LaplaceBoTorch
+        return torch.nn.Sequential(
+            torch.nn.Linear(feature_dim, hidden_dim),
+            activation(),
+            torch.nn.Linear(hidden_dim, hidden_dim),
+            activation(),
+            torch.nn.Linear(hidden_dim, n_objs)
+        )
     model = LaplaceBoTorch(
-        net, train_x, train_y, noise_var=noise_var, hess_factorization=hess_factorization
+        get_net, train_x, train_y, noise_var=noise_var, hess_factorization=hess_factorization
     )
     return model
 
