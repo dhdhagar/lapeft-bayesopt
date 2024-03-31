@@ -76,7 +76,7 @@ def load_features(dataset, test_word, test_idx, prompt_type):
     Load cached features, if exists, otherwise compute and cache them.
     """
     CACHE_FPATH = os.path.join(args.data_dir, f'cache/{args.dataset}/')
-    os.makedirs(CACHE_PATH, exist_ok=True)
+    os.makedirs(CACHE_FPATH, exist_ok=True)
     CACHE_FNAME = f'{test_word}_{prompt_type}'
 
     # If cache exists then just load it, otherwise compute the features
@@ -318,7 +318,7 @@ if __name__ == '__main__':
         except ValueError:
             test_idx = pd_dataset.index[pd_dataset["Words"] == args.test_idx_or_word].tolist()[0]
     test_word = pd_dataset['Words'][test_idx]
-    print(f"Test word: {test_word}")
+    print(f"\nTest word: {test_word}\n")
 
     # Add word representations and compute similarities
     features, targets = load_features(dataset=pd_dataset, test_word=test_word,
