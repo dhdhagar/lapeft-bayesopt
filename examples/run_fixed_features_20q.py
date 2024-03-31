@@ -124,9 +124,6 @@ def load_features(dataset, test_word, test_idx, prompt_type):
                 feat = feat[:, -1, :]  # take embedding of the last token position in the last hidden state
             features += list(feat)
 
-            # # Here we transform the target so that the optimization problem
-            # # always corresponds to maximization
-            # targets += list(helpers.y_transform(data['labels'], MAXIMIZATION))
         features = torch.stack(features, dim=0)
         targets = cosine_similarity(features, features[test_idx]).cpu()
         targets = targets.clamp(min=-1., max=1.)
@@ -135,9 +132,9 @@ def load_features(dataset, test_word, test_idx, prompt_type):
         if args.rescale_scores:
             # Rescale scores between [0, 1]
             targets = (targets - targets.min()) / (targets.max() - targets.min())
-            if targets[targets < 1].max() < 0.9:
+            if targets[targets < 1].max() < 0.8:
                 # Rescale scores to cover the full range in [0, 1]
-                targets[targets < 1] = 0.9 * (targets[targets < 1] - targets[targets < 1].min()) / (
+                targets[targets < 1] = 0.8 * (targets[targets < 1] - targets[targets < 1].min()) / (
                         targets[targets < 1].max() - targets[targets < 1].min())
         # Cache to files
         torch.save(features, os.path.join(CACHE_FPATH, f'{CACHE_FNAME}_feats.bin'))
@@ -336,7 +333,7 @@ if __name__ == '__main__':
         pd.DataFrame({
             'Words': pd_dataset['Words'],
             'Similarity': targets.tolist()
-        }).to_csv(os.path.join(out_dir, f'{test_word}_{args.prompt_type}.csv'), index=False)
+        }).to_csv(os.path.join(out_dir, f'{test_word}_{args.prompt_type}.csv'), sep='\t', index=False)
         print(f'Saved word-specific dataset at ' + os.path.join(out_dir, f'{test_word}_{args.prompt_type}.csv'))
 
     # Run BO over multiple seeds
