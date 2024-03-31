@@ -20,6 +20,7 @@ class RedoxDataProcessor(DataProcessor):
 
     Objective: Minimize Ered (secondary objective: minimize Gsol)
     """
+
     def __init__(self, prompt_builder, tokenizer):
         super().__init__(prompt_builder=prompt_builder, num_outputs=1, tokenizer=tokenizer)
         self.x_col = 'SMILES'
@@ -49,6 +50,7 @@ class MultiRedoxDataProcessor(DataProcessor):
 
     Objective: Minimize Ered, minimize Gsol
     """
+
     def __init__(self, prompt_builder, tokenizer):
         super().__init__(prompt_builder=prompt_builder, num_outputs=2, tokenizer=tokenizer)
         self.x_col = 'SMILES'
@@ -58,6 +60,7 @@ class MultiRedoxDataProcessor(DataProcessor):
 
     def _get_columns_to_remove(self) -> List[str]:
         return ['Entry Number', 'File Name', 'SMILES', 'HOMO', 'Ered', 'Gsol', 'Absorption Wavelength']
+
 
 class TQuestResearchDataProcessor(DataProcessor):
     """
@@ -72,6 +75,7 @@ class TQuestResearchDataProcessor(DataProcessor):
 
     Objective: Maximize similarity
     """
+
     def __init__(self, prompt_builder, tokenizer):
         super().__init__(prompt_builder=prompt_builder, num_outputs=1, tokenizer=tokenizer)
         self.x_col = 'Word'
@@ -81,3 +85,15 @@ class TQuestResearchDataProcessor(DataProcessor):
 
     def _get_columns_to_remove(self) -> List[str]:
         return ['Entry Number', 'Word', 'Similarity']
+
+
+class TwentyQuestionsDataProcessor(DataProcessor):
+    def __init__(self, prompt_builder, tokenizer):
+        super().__init__(prompt_builder=prompt_builder, num_outputs=1, tokenizer=tokenizer)
+        self.x_col = 'Word'
+        self.target_col = 'Similarity'
+        self.obj_str = 'similarity'
+        self.maximization = True
+
+    def _get_columns_to_remove(self) -> List[str]:
+        return ['Word']

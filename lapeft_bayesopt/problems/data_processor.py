@@ -55,7 +55,7 @@ class DataProcessor:
             collate_fn=DataCollatorWithPadding(self.tokenizer)
         )
 
-    def _get_targets(self, row: Union[pd.Series, dict]) -> torch.Tensor:
+    def _get_targets(self, row: Union[pd.Series, dict], default=-1) -> torch.Tensor:
         """
         Arguments:
         ----------
@@ -68,9 +68,9 @@ class DataProcessor:
             Regression target(s). Shape (self.num_outputs,).
         """
         if isinstance(self.target_col, list):
-            return [row[col] for col in self.target_col]
+            return [row.get(col, default) for col in self.target_col]
         else:
-            return [row[self.target_col]]
+            return [row.get(self.target_col, default)]
 
     def _get_columns_to_remove(self) -> List[str]:
         """

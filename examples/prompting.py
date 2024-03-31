@@ -10,5 +10,11 @@ class MyPromptBuilder(PromptBuilder):
             return f'The estimated {obj_str} of the molecule {x} is: '
         elif self.kind == 'just-smiles':
             return x
+        elif self.kind == 'word':
+            # TwentyQuestions
+            return x
+        elif self.kind == 'instruction':
+            # TwentyQuestions
+            return f'The task is to find a hidden test word by guessing. The next guess is {obj_str}.'
         else:
             return NotImplementedError
