@@ -55,6 +55,9 @@ class Parser(argparse.ArgumentParser):
             "--rescale_scores", action=argparse.BooleanOptionalAction, default=True
         )
         self.add_argument(
+            "--save_word_specific_dataset", action=argparse.BooleanOptionalAction, default=False
+        )
+        self.add_argument(
             "--seed", type=int, default=9999
         )
         self.add_argument(
@@ -326,6 +329,12 @@ if __name__ == '__main__':
     # Add word representations and compute similarities
     features, targets = load_features(dataset=pd_dataset, test_word=test_word,
                                       test_idx=test_idx, prompt_type=args.prompt_type)
+    if args.save_word_specific_dataset:
+        pd.DataFrame({
+            'Words': pd_dataset['Words'],
+            'Similarity': targets.tolist()
+        }).to_csv(os.path.join(out_dir, f'{test_word}_{args.prompt_type}.csv'), index=False)
+        print(f'Saved word-specific dataset at ' + os.path.join(out_dir, f'{test_word}_{args.prompt_type}.csv'))
 
     # Run BO over multiple seeds
     all_results = []
