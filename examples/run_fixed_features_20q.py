@@ -58,6 +58,9 @@ class Parser(argparse.ArgumentParser):
             "--save_word_specific_dataset", action=argparse.BooleanOptionalAction, default=False
         )
         self.add_argument(
+            "--no_cache", action=argparse.BooleanOptionalAction, default=False
+        )
+        self.add_argument(
             "--seed", type=int, default=9999
         )
         self.add_argument(
@@ -83,7 +86,7 @@ def load_features(dataset, test_word, test_idx, prompt_type):
     CACHE_FNAME = f'{test_word}_{prompt_type}'
 
     # If cache exists then just load it, otherwise compute the features
-    if os.path.exists(os.path.join(CACHE_FPATH, f'{CACHE_FNAME}_feats.bin')):
+    if not args.no_cache and os.path.exists(os.path.join(CACHE_FPATH, f'{CACHE_FNAME}_feats.bin')):
         features = torch.load(os.path.join(CACHE_FPATH, f'{CACHE_FNAME}_feats.bin'))
         targets = torch.load(os.path.join(CACHE_FPATH, f'{CACHE_FNAME}_targets.bin'))
     else:
