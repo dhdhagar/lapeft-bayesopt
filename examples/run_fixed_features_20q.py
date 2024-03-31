@@ -316,8 +316,8 @@ if __name__ == '__main__':
         try:
             test_idx = int(args.test_idx_or_word)
         except ValueError:
-            test_idx = pd_dataset['Word'].index(args.test_idx_or_word)
-    test_word = pd_dataset['Word'][test_idx]
+            test_idx = pd_dataset['Words'].index(args.test_idx_or_word)
+    test_word = pd_dataset['Words'][test_idx]
     print(f"Test word: {test_word}")
 
     # Add word representations and compute similarities
@@ -328,7 +328,7 @@ if __name__ == '__main__':
     all_results = []
     for i in range(args.n_seeds):
         seed = args.seed + i
-        results = run_bayesopt(words=list(pd_dataset['Word']), features=features, targets=targets,
+        results = run_bayesopt(words=list(pd_dataset['Words']), features=features, targets=targets,
                                test_word=test_word, n_init_data=args.n_init_data, T=args.T, randseed=seed)
         plot(results)
         all_results.append(results)
