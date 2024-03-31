@@ -399,7 +399,7 @@ if __name__ == '__main__':
         "prompt_strategy": args.prompt_strategy,
         "feat_extraction_strategy": args.feat_extraction_strategy,
         "model": args.model,
-        "avg_elapsed_time": round(elapsed_time/n_seeds, 2),
+        "avg_elapsed_time": round(elapsed_time/args.n_seeds, 2),
         "results": {
             "trace_y_mean": list(all_trace_y.mean(axis=0)),
             "trace_y_std": list(all_trace_y.std(axis=0)),
