@@ -318,9 +318,11 @@ def plot(results, aggregate=False):
         t = np.arange(len(res['trace_y_mean']))
         plt.axhline(results['opt_val'], color='black', linestyle='dashed')
         plt.plot(t, res['trace_y_mean'])
-        plt.fill_between(t, res['trace_y_mean'] - res['trace_y_std'], res['trace_y_mean'] + res['trace_y_std'], alpha=0.2)
+        plt.fill_between(t, np.array(res['trace_y_mean']) - np.array(res['trace_y_std']),
+                         np.array(res['trace_y_mean']) + np.array(res['trace_y_std']), alpha=0.2)
         plt.plot(t, res['trace_y_mean_rand'])
-        plt.fill_between(t, res['trace_y_mean_rand'] - res['trace_y_std_rand'], res['trace_y_mean_rand'] + res['trace_y_std_rand'], alpha=0.2)
+        plt.fill_between(t, np.array(res['trace_y_mean_rand']) - np.array(res['trace_y_std_rand']),
+                         np.array(res['trace_y_mean_rand']) + np.array(res['trace_y_std_rand']), alpha=0.2)
         plt.legend(["Optimal", "BO", "Random"])
         plt.xlabel(r'$t$')
         plt.ylabel(r'Objective ($\uparrow$)')
