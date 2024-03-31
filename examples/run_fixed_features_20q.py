@@ -259,7 +259,7 @@ def run_bayesopt(words, features, targets, test_word, n_init_data=10, T=None, se
 
     pbar = tqdm.trange(T if T is not None else len(features) - n_init_data)
     pbar.set_description(
-        f'[Best f(x="{best_x_label}") = {best_y:.4f}]'
+        f'[Best f(x="{best_x_label}") = {best_y:.3f} (rank={word2rank[best_x_label]})]'
     )
 
     # The BayesOpt loop --- or just use BoTorch since LaplaceBoTorch is compatible
@@ -307,8 +307,8 @@ def run_bayesopt(words, features, targets, test_word, n_init_data=10, T=None, se
         surrogate = surrogate.condition_on_observations(new_x.unsqueeze(0), new_y.unsqueeze(0))
 
         pbar.set_description(
-            f'[Best f(x="{best_x_label}") = {best_y:.3f}, '
-            + f'curr f(x="{new_x_label}") = {new_y.item():.3f}]'
+            f'[Best f(x="{best_x_label}") = {best_y:.3f} (rank={word2rank[best_x_label]}), '
+            + f'curr f(x="{new_x_label}") = {new_y.item():.3f} (rank={word2rank[new_x_label]})]'
         )
 
         # Random sampling baseline
