@@ -37,7 +37,7 @@ class Parser(argparse.ArgumentParser):
             "--test_idx_or_word", type=str
         )
         self.add_argument(
-            "--prompt_type", type=str, choices=['word', 'completion', 'instruction'], default='word'
+            "--prompt_strategy", type=str, choices=['word', 'completion', 'instruction'], default='word'
         )
         self.add_argument(
             "--model", type=str, choices=['t5-small', 't5-base', 'llama-2-7b', 'llama-2-13b'], default="llama-2-7b"
@@ -58,7 +58,7 @@ class Parser(argparse.ArgumentParser):
             "--save_word_specific_dataset", action=argparse.BooleanOptionalAction, default=False
         )
         self.add_argument(
-            "--feat_extraction_strategy", type=str, choices=['last_token', 'average', 'max'], default="last_token"
+            "--feat_extraction_strategy", type=str, choices=['last-token', 'average', 'max'], default="last-token"
         )
         self.add_argument(
             "--no_cache", action=argparse.BooleanOptionalAction, default=False
@@ -80,13 +80,13 @@ class Parser(argparse.ArgumentParser):
         )
 
 
-def load_features(dataset, test_word, test_idx, prompt_type):
+def load_features(dataset, test_word, test_idx):
     """
     Load cached features, if exists, otherwise compute and cache them.
     """
     CACHE_FPATH = os.path.join(args.data_dir, f'cache/{args.dataset}/')
     os.makedirs(CACHE_FPATH, exist_ok=True)
-    CACHE_FNAME = f'{test_word}_{prompt_type}'
+    CACHE_FNAME = f'{test_word}_{args.prompt_strategy}_{args.feat_extraction_strategy}'
 
     # If cache exists then just load it, otherwise compute the features
     if not args.no_cache and os.path.exists(os.path.join(CACHE_FPATH, f'{CACHE_FNAME}_feats.bin')):
@@ -114,7 +114,7 @@ def load_features(dataset, test_word, test_idx, prompt_type):
         llm_feat_extractor.freeze_params()
 
         # Build the textual representation based on the prompt strategy
-        prompt_builder = MyPromptBuilder(kind=prompt_type)
+        prompt_builder = MyPromptBuilder(kind=args.prompt_strategy)
         data_processor = TwentyQuestionsDataProcessor(prompt_builder, tokenizer)
         dataloader = data_processor.get_dataloader(dataset, shuffle=False)
 
@@ -128,7 +128,7 @@ def load_features(dataset, test_word, test_idx, prompt_type):
                     feat = feat.mean(dim=1)
                 elif args.feat_extraction_strategy == 'max':
                     feat = feat.max(dim=1).values
-                elif args.feat_extraction_strategy == 'last_token':
+                elif args.feat_extraction_strategy == 'last-token':
                     # take embedding of the last token position in the last hidden state
                     feat = feat[:, -1, :]
             features += list(feat)
@@ -165,6 +165,7 @@ def get_surrogate(train_x, train_y, hidden_dim=50, activation=torch.nn.Tanh, n_o
             activation(),
             torch.nn.Linear(hidden_dim, n_objs)
         )
+
     model = LaplaceBoTorch(
         get_net, train_x, train_y, noise_var=noise_var, hess_factorization=hess_factorization
     )
@@ -282,6 +283,8 @@ def run_bayesopt(words, features, targets, test_word, n_init_data=10, T=None, se
         "n_init_data": n_init_data,
         "T": T if T is not None else None,
         "opt_val": ground_truth_max,
+        "prompt_strategy": args.prompt_strategy,
+        "feat_extraction_strategy": args.feat_extraction_strategy,
         "results": {
             "trace_y": trace_best_y,
             "trace_x": trace_best_x_label,
@@ -336,14 +339,15 @@ if __name__ == '__main__':
     print(f'\nHIDDEN WORD: "{test_word}"\n')
 
     # Add word representations and compute similarities
-    features, targets = load_features(dataset=pd_dataset, test_word=test_word,
-                                      test_idx=test_idx, prompt_type=args.prompt_type)
+    features, targets = load_features(dataset=pd_dataset, test_word=test_word, test_idx=test_idx)
     if args.save_word_specific_dataset:
         pd.DataFrame({
             'Words': pd_dataset['Words'],
             'Similarity': targets.tolist()
-        }).to_csv(os.path.join(out_dir, f'{test_word}_{args.prompt_type}.csv'), sep='\t', index=False)
-        print(f'Saved word-specific dataset at ' + os.path.join(out_dir, f'{test_word}_{args.prompt_type}.csv'))
+        }).to_csv(os.path.join(out_dir, f'{test_word}_{args.prompt_strategy}_{args.feat_extraction_strategy}.csv'),
+                  sep='\t', index=False)
+        print(f'Saved word-specific dataset at ' + os.path.join(out_dir,
+                                                                f'{test_word}_{args.prompt_strategy}_{args.feat_extraction_strategy}.csv'))
 
     # Run BO over multiple seeds
     all_results = []
@@ -365,6 +369,8 @@ if __name__ == '__main__':
         "n_init_data": all_results[-1]["n_init_data"],
         "T": all_results[-1]["T"],
         "opt_val": all_results[-1]["opt_val"],
+        "prompt_strategy": args.prompt_strategy,
+        "feat_extraction_strategy": args.feat_extraction_strategy,
         "results": {
             "trace_y_mean": all_trace_y.mean(axis=0),
             "trace_y_std": all_trace_y.std(axis=0),
