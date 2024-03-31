@@ -6,6 +6,7 @@ import tqdm
 from sklearn.utils import shuffle as skshuffle
 import os
 import time
+import json
 import matplotlib.pyplot as plt
 from torch.nn.functional import cosine_similarity
 # Non-finetuned surrogates. The finetuned surrogates are in lapeft_bayesopt.surrogates
@@ -296,21 +297,34 @@ def run_bayesopt(words, features, targets, test_word, n_init_data=10, T=None, se
     }
 
 
-def plot(results):
-    res = results['results']
-    t = np.arange(len(res['trace_y']))
+def plot(results, aggregate=False):
     plt.clf()
-    plt.axhline(results['opt_val'], color='black', linestyle='dashed')
-    plt.plot(t, res['trace_y'])
-    plt.plot(t, res['trace_y_rand'])
-    plt.legend(["Optimal", "BO", "Random"])
-    plt.xlabel(r'$t$')
-    plt.ylabel(r'Objective ($\uparrow$)')
-    plt.title(f"steps={res['steps_to_opt']}, best_x={res['trace_x'][-1]}, best_y={res['trace_y'][-1]}")
-    plt.savefig(
-        os.path.join(out_dir, f'{results["target"]}_T-{args.T}_init-{args.n_init_data}_seed-{results["seed"]}.png'))
-    print(f'Saved plot at ' +
-          os.path.join(out_dir, f'{results["target"]}_T-{args.T}_init-{args.n_init_data}_seed-{results["seed"]}.png'))
+    if not aggregate:
+        res = results['results']
+        t = np.arange(len(res['trace_y']))
+        plt.axhline(results['opt_val'], color='black', linestyle='dashed')
+        plt.plot(t, res['trace_y'])
+        plt.plot(t, res['trace_y_rand'])
+        plt.legend(["Optimal", "BO", "Random"])
+        plt.xlabel(r'$t$')
+        plt.ylabel(r'Objective ($\uparrow$)')
+        plt.title(f"steps={res['steps_to_opt']}, best_x={res['trace_x'][-1]}, best_y={res['trace_y'][-1]}")
+        plt.savefig(
+            os.path.join(out_dir, f'{results["target"]}_T-{args.T}_init-{args.n_init_data}_seed-{results["seed"]}.png'))
+        print(f'Saved plot at ' +
+              os.path.join(out_dir, f'{results["target"]}_T-{args.T}_init-{args.n_init_data}_seed-{results["seed"]}.png'))
+    else:
+        res = results['results']
+        t = np.arange(len(res['trace_y_mean']))
+        plt.axhline(results['opt_val'], color='black', linestyle='dashed')
+        plt.plot(t, res['trace_y_mean'])
+        plt.fill_between(t, res['trace_y_mean'] - res['trace_y_std'], res['trace_y_mean'] + res['trace_y_std'], alpha=0.2)
+        plt.plot(t, res['trace_y_mean_rand'])
+        plt.fill_between(t, res['trace_y_mean_rand'] - res['trace_y_std_rand'], res['trace_y_mean_rand'] + res['trace_y_std_rand'], alpha=0.2)
+        plt.legend(["Optimal", "BO", "Random"])
+        plt.xlabel(r'$t$')
+        plt.ylabel(r'Objective ($\uparrow$)')
+        plt.savefig(os.path.join(out_dir, f'agg_{results["target"]}_T-{args.T}_init-{args.n_init_data}.png'))
 
 
 if __name__ == '__main__':
@@ -377,8 +391,8 @@ if __name__ == '__main__':
             "n_found": sum([1 for res in all_results if res["results"]["steps_to_opt"] != -1]) / args.n_seeds,
             "avg_steps_to_opt": np.mean(
                 [res["results"]["steps_to_opt"] for res in all_results if res["results"]["steps_to_opt"] != -1]),
-            "trace_y_rand_mean": all_trace_y_rand.mean(axis=0),
-            "trace_y_rand_std": all_trace_y_rand.std(axis=0),
+            "trace_y_mean_rand": all_trace_y_rand.mean(axis=0),
+            "trace_y_std_rand": all_trace_y_rand.std(axis=0),
             "n_found_rand": sum([1 for res in all_results if res["results"]["steps_to_opt_rand"] != -1]) / args.n_seeds,
             "avg_steps_to_opt_rand": np.mean(
                 [res["results"]["steps_to_opt_rand"] for res in all_results if
@@ -388,3 +402,5 @@ if __name__ == '__main__':
     }
     with open(os.path.join(out_dir, 'results.json'), 'w') as fh:
         fh.write(json.dumps(final_res, indent=2))
+    # Plot aggregated results
+    plot(final_res, aggregate=True)
