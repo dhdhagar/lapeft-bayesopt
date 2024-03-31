@@ -205,7 +205,7 @@ def run_bayesopt(words, features, targets, test_word, n_init_data=10, T=None, se
     for t in pbar:
         unseen_idxs = list(set(range(len(features))) - seen_idxs)
         dataloader = data_utils.DataLoader(
-            data_utils.TensorDataset(torch.stack(features[unseen_idxs]), torch.stack(targets[unseen_idxs])),
+            data_utils.TensorDataset(features[unseen_idxs], targets[unseen_idxs]),
             batch_size=256, shuffle=False
         )
 
