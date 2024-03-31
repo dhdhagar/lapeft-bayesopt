@@ -41,7 +41,9 @@ class Parser(argparse.ArgumentParser):
             "--prompt_strategy", type=str, choices=['word', 'completion', 'instruction'], default='word'
         )
         self.add_argument(
-            "--model", type=str, choices=['t5-small', 't5-base', 'llama-2-7b', 'llama-2-13b'], default="llama-2-7b"
+            "--model", type=str,
+            choices=['t5-small', 't5-base', 't5-large', 'llama-2-7b', 'llama-2-13b', 'llama-2-70b'],
+            default="llama-2-7b"
         )
         self.add_argument(
             "--init_strategy", type=str, choices=['random'], default="random"
@@ -272,6 +274,7 @@ def run_bayesopt(words, features, targets, test_word, n_init_data=10, T=None, se
                 steps_to_opt_rand = t + 1
         else:
             trace_best_y_rand.append(trace_best_y_rand[-1])
+            trace_best_x_label_rand.append(trace_best_x_label_rand[-1])
 
     if best_y == ground_truth_max:
         print(f'Optimum "{best_x_label}" found at step {steps_to_opt}.')
@@ -312,7 +315,8 @@ def plot(results, aggregate=False):
         plt.savefig(
             os.path.join(out_dir, f'{results["target"]}_T-{args.T}_init-{args.n_init_data}_seed-{results["seed"]}.png'))
         print(f'Saved plot at ' +
-              os.path.join(out_dir, f'{results["target"]}_T-{args.T}_init-{args.n_init_data}_seed-{results["seed"]}.png'))
+              os.path.join(out_dir,
+                           f'{results["target"]}_T-{args.T}_init-{args.n_init_data}_seed-{results["seed"]}.png'))
     else:
         res = results['results']
         t = np.arange(len(res['trace_y_mean']))
