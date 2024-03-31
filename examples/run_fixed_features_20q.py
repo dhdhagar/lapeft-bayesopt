@@ -170,8 +170,8 @@ def run_bayesopt(words, features, targets, test_word, n_init_data=10, T=None, se
     if args.init_strategy == 'random':
         _idxs = np.random.choice(np.arange(0, len(features)), size=n_init_data + 1, replace=False)
         idxs = [_i for _i in _idxs if targets[_i].item() < ground_truth_max][:n_init_data]
-        init_x = torch.stack(features[idxs])
-        init_y = torch.stack(targets[idxs])
+        init_x = features[idxs]
+        init_y = targets[idxs]
         init_x_labels = [words[_i] for _i in idxs]
         seen_idxs = set(idxs)
     else:
