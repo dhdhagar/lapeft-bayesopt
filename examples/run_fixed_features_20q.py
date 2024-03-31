@@ -253,7 +253,7 @@ def run_bayesopt(words, features, targets, test_word, n_init_data=10, T=None, se
         # Pick the candidate that maximizes the acquisition fn and update seen idxs
         acq_vals = torch.cat(acq_vals, dim=0).cpu().squeeze()
         _idx_best = torch.argmax(acq_vals).item()
-        idx_best = unseen_idxs[idx_best]
+        idx_best = unseen_idxs[_idx_best]
         seen_idxs.add(idx_best)  # Add to seen idxs
         # Observe true value of selected candidate
         new_x, new_y = features[idx_best], targets[idx_best]
