@@ -318,7 +318,7 @@ if __name__ == '__main__':
         except ValueError:
             test_idx = pd_dataset.index[pd_dataset["Words"] == args.test_idx_or_word].tolist()[0]
     test_word = pd_dataset['Words'][test_idx]
-    print(f"\nTest word: {test_word}\n")
+    print(f'\nHIDDEN WORD: "{test_word}"\n')
 
     # Add word representations and compute similarities
     features, targets = load_features(dataset=pd_dataset, test_word=test_word,
@@ -345,12 +345,12 @@ if __name__ == '__main__':
         "results": {
             "trace_y_mean": all_trace_y.mean(axis=0),
             "trace_y_std": all_trace_y.std(axis=0),
-            "n_found": [1 for res in all_results if res["results"]["steps_to_opt"] != -1]/args.n_seeds,
+            "n_found": [1 for res in all_results if res["results"]["steps_to_opt"] != -1] / args.n_seeds,
             "avg_steps_to_opt": np.mean(
                 [res["results"]["steps_to_opt"] for res in all_results if res["results"]["steps_to_opt"] != -1]),
             "trace_y_rand_mean": all_trace_y_rand.mean(axis=0),
             "trace_y_rand_std": all_trace_y_rand.std(axis=0),
-            "n_found_rand": [1 for res in all_results if res["results"]["steps_to_opt_rand"] != -1]/args.n_seeds,
+            "n_found_rand": [1 for res in all_results if res["results"]["steps_to_opt_rand"] != -1] / args.n_seeds,
             "avg_steps_to_opt_rand": np.mean(
                 [res["results"]["steps_to_opt_rand"] for res in all_results if
                  res["results"]["steps_to_opt_rand"] != -1]),

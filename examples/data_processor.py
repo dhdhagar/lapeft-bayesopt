@@ -96,4 +96,4 @@ class TwentyQuestionsDataProcessor(DataProcessor):
         self.maximization = True
 
     def _get_columns_to_remove(self) -> List[str]:
-        return ['Word']
+        return ['Words']
