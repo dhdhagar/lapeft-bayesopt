@@ -329,7 +329,8 @@ if __name__ == '__main__':
     for i in range(args.n_seeds):
         seed = args.seed + i
         results = run_bayesopt(words=list(pd_dataset['Words']), features=features, targets=targets,
-                               test_word=test_word, n_init_data=args.n_init_data, T=args.T, randseed=seed)
+                               test_word=test_word, n_init_data=args.n_init_data, T=args.T, seed=seed,
+                               device='cuda' if args.cuda else 'cpu')
         plot(results)
         all_results.append(results)
 
