@@ -386,13 +386,13 @@ if __name__ == '__main__':
         "prompt_strategy": args.prompt_strategy,
         "feat_extraction_strategy": args.feat_extraction_strategy,
         "results": {
-            "trace_y_mean": all_trace_y.mean(axis=0),
-            "trace_y_std": all_trace_y.std(axis=0),
+            "trace_y_mean": list(all_trace_y.mean(axis=0)),
+            "trace_y_std": list(all_trace_y.std(axis=0)),
             "n_found": sum([1 for res in all_results if res["results"]["steps_to_opt"] != -1]) / args.n_seeds,
             "avg_steps_to_opt": np.mean(
                 [res["results"]["steps_to_opt"] for res in all_results if res["results"]["steps_to_opt"] != -1]),
-            "trace_y_mean_rand": all_trace_y_rand.mean(axis=0),
-            "trace_y_std_rand": all_trace_y_rand.std(axis=0),
+            "trace_y_mean_rand": list(all_trace_y_rand.mean(axis=0)),
+            "trace_y_std_rand": list(all_trace_y_rand.std(axis=0)),
             "n_found_rand": sum([1 for res in all_results if res["results"]["steps_to_opt_rand"] != -1]) / args.n_seeds,
             "avg_steps_to_opt_rand": np.mean(
                 [res["results"]["steps_to_opt_rand"] for res in all_results if
