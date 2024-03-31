@@ -283,7 +283,7 @@ def run_bayesopt(words, features, targets, test_word, n_init_data=10, T=None, se
 
 def plot(results):
     res = results['results']
-    t = np.arange(len(results['trace_y']))
+    t = np.arange(len(res['trace_y']))
     plt.clf()
     plt.axhline(results['opt_val'], color='black', linestyle='dashed')
     plt.plot(t, res['trace_y'])
@@ -293,9 +293,9 @@ def plot(results):
     plt.ylabel(r'Objective ($\uparrow$)')
     plt.title(f"steps={res['steps_to_opt']}, best_x={res['trace_x'][-1]}, best_y={res['trace_y'][-1]}")
     plt.savefig(
-        os.path.join(out_dir, f'{results["target"]}_T-{args.T}_init-{args.n_init_data}_seed-{seed}.png'))
+        os.path.join(out_dir, f'{results["target"]}_T-{args.T}_init-{args.n_init_data}_seed-{results["seed"]}.png'))
     print(f'Saved plot at ' +
-          os.path.join(out_dir, f'{results["target"]}_T-{args.T}_init-{args.n_init_data}_seed-{seed}.png'))
+          os.path.join(out_dir, f'{results["target"]}_T-{args.T}_init-{args.n_init_data}_seed-{results["seed"]}.png'))
 
 
 if __name__ == '__main__':
