@@ -90,7 +90,7 @@ class TQuestResearchDataProcessor(DataProcessor):
 class TwentyQuestionsDataProcessor(DataProcessor):
     def __init__(self, prompt_builder, tokenizer):
         super().__init__(prompt_builder=prompt_builder, num_outputs=1, tokenizer=tokenizer)
-        self.x_col = 'Word'
+        self.x_col = 'Words'
         self.target_col = 'Similarity'
         self.obj_str = 'similarity'
         self.maximization = True
