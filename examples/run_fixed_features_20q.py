@@ -179,6 +179,12 @@ def run_bayesopt(words, features, targets, test_word, n_init_data=10, T=None, se
     np.random.seed(seed)
     torch.manual_seed(seed)
 
+    # Sort data in desceding order of targets
+    targets, _idxs = torch.sort(targets, descending=True)
+    features = features[_idxs]
+    words = [words[i] for i in _idxs]
+    word2rank = {w: r for r, w in enumerate(words, 1)}
+
     # Shuffle the dataset
     words, features, targets = skshuffle(words, features, targets, random_state=seed)
     ground_truth_max = targets.max().item()
@@ -192,6 +198,7 @@ def run_bayesopt(words, features, targets, test_word, n_init_data=10, T=None, se
         init_y = targets[idxs]
         init_x_labels = [words[_i] for _i in idxs]
         seen_idxs = set(idxs)
+        seen_idxs_rand = set(idxs)
     else:
         raise NotImplementedError
 
@@ -203,11 +210,13 @@ def run_bayesopt(words, features, targets, test_word, n_init_data=10, T=None, se
     best_idx = init_y.argmax()
     best_y = init_y[best_idx].item()  # Current best f(x) from the initial dataset
     best_x_label = init_x_labels[best_idx]
+    best_rank = word2rank[best_x_label]
     trace_best_y = [best_y]
     trace_best_x_label = [best_x_label]
     steps_to_opt = -1
 
     # Also track a random sampling baseline
+    best_rank_rand = word2rank[best_x_label]
     trace_best_y_rand = [best_y]
     trace_best_x_label_rand = [best_x_label]
     steps_to_opt_rand = -1
@@ -243,14 +252,16 @@ def run_bayesopt(words, features, targets, test_word, n_init_data=10, T=None, se
 
         # Pick the candidate that maximizes the acquisition fn and update seen idxs
         acq_vals = torch.cat(acq_vals, dim=0).cpu().squeeze()
-        idx_best = torch.argmax(acq_vals).item()
-        seen_idxs.add(unseen_idxs[idx_best])  # Add to seen idxs
+        _idx_best = torch.argmax(acq_vals).item()
+        idx_best = unseen_idxs[idx_best]
+        seen_idxs.add(idx_best)  # Add to seen idxs
         # Observe true value of selected candidate
         new_x, new_y = features[idx_best], targets[idx_best]
-        new_x_label = words[unseen_idxs[idx_best]]
+        new_x_label = words[idx_best]
         if new_y.item() > best_y:
             best_y = new_y.item()
             best_x_label = new_x_label
+            best_rank = word2rank[best_x_label]
             if best_y == ground_truth_max:
                 steps_to_opt = t + 1
         trace_best_y.append(best_y)
@@ -265,11 +276,14 @@ def run_bayesopt(words, features, targets, test_word, n_init_data=10, T=None, se
         )
 
         # Random sampling baseline
-        idx_rand = np.random.randint(len(features))
+        unseen_idxs_rand = list(set(range(len(features))) - seen_idxs_rand)
+        idx_rand = np.random.choice(unseen_idxs_rand)
+        seen_idxs_rand.add(idx_rand)
         new_x_rand, new_y_rand = features[idx_rand], targets[idx_rand]
         if new_y_rand.item() > trace_best_y_rand[-1]:
             trace_best_y_rand.append(new_y_rand.item())
             trace_best_x_label_rand.append(words[idx_rand])
+            best_rank_rand = word2rank[words[idx_rand]]
             if trace_best_y_rand[-1] == ground_truth_max:
                 steps_to_opt_rand = t + 1
         else:
@@ -291,12 +305,14 @@ def run_bayesopt(words, features, targets, test_word, n_init_data=10, T=None, se
         "feat_extraction_strategy": args.feat_extraction_strategy,
         "model": args.model,
         "results": {
+            "best_rank": best_rank,
+            "steps_to_opt": steps_to_opt,
+            "best_rank_rand": best_rank_rand,
+            "steps_to_opt_rand": steps_to_opt_rand,
             "trace_y": trace_best_y,
             "trace_x": trace_best_x_label,
-            "steps_to_opt": steps_to_opt,
             "trace_y_rand": trace_best_y_rand,
             "trace_x_rand": trace_best_x_label_rand,
-            "steps_to_opt_rand": steps_to_opt_rand,
         }
     }
 
@@ -312,7 +328,7 @@ def plot(results, aggregate=False):
         plt.legend(["Optimal", "BO", "Random"])
         plt.xlabel(r'$t$')
         plt.ylabel(r'Objective ($\uparrow$)')
-        plt.title(f"steps={res['steps_to_opt']}, best_x={res['trace_x'][-1]}, best_y={res['trace_y'][-1]}")
+        plt.title(f"best_rank={res['best_rank']}, best_x={res['trace_x'][-1]}, best_y={round(res['trace_y'][-1], 4)}, steps={res['steps_to_opt']}")
         plt.savefig(
             os.path.join(out_dir, f'{results["target"]}_T-{args.T}_init-{args.n_init_data}_seed-{results["seed"]}.png'))
         print(f'Saved plot at ' +
@@ -333,6 +349,8 @@ def plot(results, aggregate=False):
         plt.legend()
         plt.xlabel(r'$t$')
         plt.ylabel(r'Objective ($\uparrow$)')
+        plt.title(
+            f"avg_rank={res['avg_rank']}, avg_rank_rand={res['avg_rank_rand']}")
         plt.savefig(os.path.join(out_dir, f'agg_{results["target"]}_T-{args.T}_init-{args.n_init_data}.png'))
 
 
@@ -401,20 +419,26 @@ if __name__ == '__main__':
         "model": args.model,
         "avg_elapsed_time": round(elapsed_time/args.n_seeds, 2),
         "results": {
-            "trace_y_mean": list(all_trace_y.mean(axis=0)),
-            "trace_y_std": list(all_trace_y.std(axis=0)),
-            "n_found": sum([1 for res in all_results if res["results"]["steps_to_opt"] != -1]) / args.n_seeds,
+            "avg_rank": np.mean([res["results"]["best_rank"] for res in all_results]),
+            "avg_found": sum([1 for res in all_results if res["results"]["steps_to_opt"] != -1]) / args.n_seeds,
             "avg_steps_to_opt": np.mean(
                 [res["results"]["steps_to_opt"] for res in all_results if res["results"]["steps_to_opt"] != -1]),
-            "trace_y_mean_rand": list(all_trace_y_rand.mean(axis=0)),
-            "trace_y_std_rand": list(all_trace_y_rand.std(axis=0)),
-            "n_found_rand": sum([1 for res in all_results if res["results"]["steps_to_opt_rand"] != -1]) / args.n_seeds,
+            "avg_rank_rand": np.mean([res["results"]["best_rank_rand"] for res in all_results]),
+            "avg_found_rand": sum([1 for res in all_results if res["results"]["steps_to_opt_rand"] != -1]) / args.n_seeds,
             "avg_steps_to_opt_rand": np.mean(
                 [res["results"]["steps_to_opt_rand"] for res in all_results if
                  res["results"]["steps_to_opt_rand"] != -1]),
+            "trace_y_mean": list(all_trace_y.mean(axis=0)),
+            "trace_y_std": list(all_trace_y.std(axis=0)),
+            "trace_y_mean_rand": list(all_trace_y_rand.mean(axis=0)),
+            "trace_y_std_rand": list(all_trace_y_rand.std(axis=0)),
             "per_seed": all_results
-        },
+        }
     }
+    for k, v in final_res["results"].items():
+        if type(v) is float:
+            final_res["results"][k] = round(v, 2)
+
     with open(os.path.join(out_dir, 'results.json'), 'w') as fh:
         fh.write(json.dumps(final_res, indent=2))
     # Plot aggregated results
