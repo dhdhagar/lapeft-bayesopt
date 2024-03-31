@@ -316,14 +316,16 @@ def plot(results, aggregate=False):
     else:
         res = results['results']
         t = np.arange(len(res['trace_y_mean']))
-        plt.axhline(results['opt_val'], color='black', linestyle='dashed')
-        plt.plot(t, res['trace_y_mean'])
+        plt.axhline(results['opt_val'], color='black', linestyle='dashed', label="Optimal")
+        plt.plot(t, res['trace_y_mean'], label="BO")
         plt.fill_between(t, np.array(res['trace_y_mean']) - np.array(res['trace_y_std']),
-                         np.array(res['trace_y_mean']) + np.array(res['trace_y_std']), alpha=0.2)
-        plt.plot(t, res['trace_y_mean_rand'])
+                         np.array(res['trace_y_mean']) + np.array(res['trace_y_std']),
+                         color='blue', alpha=0.2)
+        plt.plot(t, res['trace_y_mean_rand'], label="Random")
         plt.fill_between(t, np.array(res['trace_y_mean_rand']) - np.array(res['trace_y_std_rand']),
-                         np.array(res['trace_y_mean_rand']) + np.array(res['trace_y_std_rand']), alpha=0.2)
-        plt.legend(["Optimal", "BO", "Random"])
+                         np.array(res['trace_y_mean_rand']) + np.array(res['trace_y_std_rand']),
+                         color='orange', alpha=0.2)
+        plt.legend()
         plt.xlabel(r'$t$')
         plt.ylabel(r'Objective ($\uparrow$)')
         plt.savefig(os.path.join(out_dir, f'agg_{results["target"]}_T-{args.T}_init-{args.n_init_data}.png'))
