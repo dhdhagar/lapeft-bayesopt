@@ -243,6 +243,7 @@ def run_bayesopt(words, features, targets, test_word, n_init_data=10, T=None, se
     surrogate = surrogate.to(device)
 
     # Prepare for the BO loop
+    bo_found, rand_found = False, False
     best_idx = init_y.argmax()
     best_y = init_y[best_idx].item()  # Current best f(x) from the initial dataset
     best_x_label = init_x_labels[best_idx]
@@ -264,64 +265,77 @@ def run_bayesopt(words, features, targets, test_word, n_init_data=10, T=None, se
 
     # The BayesOpt loop --- or just use BoTorch since LaplaceBoTorch is compatible
     for t in pbar:
-        unseen_idxs = list(set(range(len(features))) - seen_idxs)
-        dataloader = data_utils.DataLoader(
-            data_utils.TensorDataset(features[unseen_idxs], targets[unseen_idxs]),
-            batch_size=256, shuffle=False
-        )
+        if not bo_found:
+            unseen_idxs = list(set(range(len(features))) - seen_idxs)
+            dataloader = data_utils.DataLoader(
+                data_utils.TensorDataset(features[unseen_idxs], targets[unseen_idxs]),
+                batch_size=256, shuffle=False
+            )
 
-        # Make surrogate predictions over all candidates,
-        # then use the predictive mean and variance to compute the acquisition function values
-        acq_vals = []
-        for x, y in dataloader:
-            # Obtain the posterior predictive distribution p(g_t(x) | D_t)
-            posterior = surrogate.posterior(x)
-            f_mean, f_var = posterior.mean, posterior.variance
-            # For multiobjective problems take the covariance matrix
-            # i.e., f_cov = posterior.covariance_matrix
+            # Make surrogate predictions over all candidates,
+            # then use the predictive mean and variance to compute the acquisition function values
+            acq_vals = []
+            for x, y in dataloader:
+                # Obtain the posterior predictive distribution p(g_t(x) | D_t)
+                posterior = surrogate.posterior(x)
+                f_mean, f_var = posterior.mean, posterior.variance
+                # For multiobjective problems take the covariance matrix
+                # i.e., f_cov = posterior.covariance_matrix
 
-            # Compute value of the acquisition function
-            acq_fn = {
-                "thompson_sampling": thompson_sampling
-            }[args.acquisition_fn]
-            acq_vals.append(acq_fn(f_mean, f_var))
+                # Compute value of the acquisition function
+                acq_fn = {
+                    "thompson_sampling": thompson_sampling
+                }[args.acquisition_fn]
+                acq_vals.append(acq_fn(f_mean, f_var))
 
-        # Pick the candidate that maximizes the acquisition fn and update seen idxs
-        acq_vals = torch.cat(acq_vals, dim=0).cpu().squeeze()
-        _idx_best = torch.argmax(acq_vals).item()
-        idx_best = unseen_idxs[_idx_best]
-        seen_idxs.add(idx_best)  # Add to seen idxs
-        # Observe true value of selected candidate
-        new_x, new_y = features[idx_best], targets[idx_best]
-        new_x_label = words[idx_best]
-        if new_y.item() > best_y:
-            best_y = new_y.item()
-            best_x_label = new_x_label
-            best_rank = word2rank[best_x_label]
-            if best_y == ground_truth_max:
-                steps_to_opt = t + 1
-        trace_best_y.append(best_y)
-        trace_best_x_label.append(best_x_label)
+            # Pick the candidate that maximizes the acquisition fn and update seen idxs
+            acq_vals = torch.cat(acq_vals, dim=0).cpu().squeeze()
+            _idx_best = torch.argmax(acq_vals).item()
+            idx_best = unseen_idxs[_idx_best]
+            seen_idxs.add(idx_best)  # Add to seen idxs
+            # Observe true value of selected candidate
+            new_x, new_y = features[idx_best], targets[idx_best]
+            new_x_label = words[idx_best]
+            if new_y.item() > best_y:
+                best_y = new_y.item()
+                best_x_label = new_x_label
+                best_rank = word2rank[best_x_label]
+                if best_y == ground_truth_max:
+                    steps_to_opt = t + 1
+                    bo_found = True
+            trace_best_y.append(best_y)
+            trace_best_x_label.append(best_x_label)
 
-        # Update surrogate posterior with the newly acquired (x, y)
-        surrogate = surrogate.condition_on_observations(new_x.unsqueeze(0), new_y.unsqueeze(0))
+            # Update surrogate posterior with the newly acquired (x, y)
+            surrogate = surrogate.condition_on_observations(new_x.unsqueeze(0), new_y.unsqueeze(0))
 
-        pbar.set_description(
-            f'[Best f(x="{best_x_label}") = {best_y:.3f} (rank={word2rank[best_x_label]}), '
-            + f'curr f(x="{new_x_label}") = {new_y.item():.3f} (rank={word2rank[new_x_label]})]'
-        )
+            pbar.set_description(
+                f'[Best f(x="{best_x_label}") = {best_y:.3f} (rank={word2rank[best_x_label]}), '
+                + f'curr f(x="{new_x_label}") = {new_y.item():.3f} (rank={word2rank[new_x_label]})]'
+            )
+        else:
+            trace_best_y.append(trace_best_y[-1])
+            trace_best_x_label.append(trace_best_x_label[-1])
+            pbar.set_description(
+                f'[Best f(x="{best_x_label}") = {best_y:.3f} (rank={word2rank[best_x_label]})]'
+            )
 
         # Random sampling baseline
-        unseen_idxs_rand = list(set(range(len(features))) - seen_idxs_rand)
-        idx_rand = np.random.choice(unseen_idxs_rand)
-        seen_idxs_rand.add(idx_rand)
-        new_x_rand, new_y_rand = features[idx_rand], targets[idx_rand]
-        if new_y_rand.item() > trace_best_y_rand[-1]:
-            trace_best_y_rand.append(new_y_rand.item())
-            trace_best_x_label_rand.append(words[idx_rand])
-            best_rank_rand = word2rank[words[idx_rand]]
-            if trace_best_y_rand[-1] == ground_truth_max:
-                steps_to_opt_rand = t + 1
+        if not rand_found:
+            unseen_idxs_rand = list(set(range(len(features))) - seen_idxs_rand)
+            idx_rand = np.random.choice(unseen_idxs_rand)
+            seen_idxs_rand.add(idx_rand)
+            new_x_rand, new_y_rand = features[idx_rand], targets[idx_rand]
+            if new_y_rand.item() > trace_best_y_rand[-1]:
+                trace_best_y_rand.append(new_y_rand.item())
+                trace_best_x_label_rand.append(words[idx_rand])
+                best_rank_rand = word2rank[words[idx_rand]]
+                if trace_best_y_rand[-1] == ground_truth_max:
+                    steps_to_opt_rand = t + 1
+                    rand_found = True
+            else:
+                trace_best_y_rand.append(trace_best_y_rand[-1])
+                trace_best_x_label_rand.append(trace_best_x_label_rand[-1])
         else:
             trace_best_y_rand.append(trace_best_y_rand[-1])
             trace_best_x_label_rand.append(trace_best_x_label_rand[-1])
