@@ -88,7 +88,7 @@ def get_avg_features(feat, data):
     # feat: (batch_size, seq_len, hidden_size)
     # this is the last_hidden_state;
     # this includes padding tokens, so we need to mask them
-    mask = data.attention_mask
+    mask = data.attention_mask.to(feat.device)
     feat = (feat * mask.unsqueeze(-1).float()).sum(dim=1) / mask.sum(dim=1, keepdim=True)
     return feat
 
@@ -97,7 +97,7 @@ def get_max_features(feat, data):
     # feat: (batch_size, seq_len, hidden_size)
     # this is the last_hidden_state;
     # this includes padding tokens, so we need to mask them
-    mask = data.attention_mask * 10 - 9
+    mask = data.attention_mask.to(feat.device) * 10 - 9
     feat = (feat * mask.unsqueeze(-1).float()).max(dim=1).values
     return feat
 
@@ -106,7 +106,7 @@ def get_last_token_features(feat, data):
     # feat: (batch_size, seq_len, hidden_size)
     # this is the last_hidden_state;
     # this includes padding tokens, so we need to mask them
-    mask = data.attention_mask
+    mask = data.attention_mask.to(feat.device)
     feat = feat[torch.arange(feat.size(0)), mask.sum(dim=1) - 1]
     return feat
 
