@@ -121,8 +121,9 @@ def load_features(dataset, test_word, test_idx, prompt_type):
             # # Here we transform the target so that the optimization problem
             # # always corresponds to maximization
             # targets += list(helpers.y_transform(data['labels'], MAXIMIZATION))
-        features = torch.cat(features, dim=0)
-        targets = cosine_similarity(features, features[None, test_idx]).cpu()
+        features = torch.stack(features, dim=0)
+        targets = cosine_similarity(features, features[test_idx]).cpu()
+        features = features.cpu()
         assert targets.max() == 1
         if args.rescale_scores:
             # Rescale scores between [0, 1]
@@ -131,7 +132,6 @@ def load_features(dataset, test_word, test_idx, prompt_type):
                 # Rescale scores to cover the full range in [0, 1]
                 targets[targets < 1] = 0.9 * (targets[targets < 1] - targets[targets < 1].min()) / (
                         targets[targets < 1].max() - targets[targets < 1].min())
-        features = features.cpu()
         # Cache to files
         torch.save(features, os.path.join(CACHE_FPATH, f'{CACHE_FNAME}_feats.bin'))
         torch.save(targets, os.path.join(CACHE_FPATH, f'{CACHE_FNAME}_targets.bin'))
