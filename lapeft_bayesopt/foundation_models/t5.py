@@ -24,8 +24,9 @@ class T5Regressor(BaseLLMRegressor):
         self.feature_extractor = feature_extractor
 
     def forward_features(self, data):
-        input_ids = data['input_ids']
         device = next(self.parameters()).device
-        input_ids = input_ids.to(device, non_blocking=True)
-        feat = self.feature_extractor(input_ids).last_hidden_state
+        input_ids = data['input_ids'].to(device, non_blocking=True)
+        # Adding missing attention mask
+        attention_mask = data['attention_mask'].to(device, non_blocking=True)
+        feat = self.feature_extractor(input_ids, attention_mask=attention_mask).last_hidden_state
         return feat

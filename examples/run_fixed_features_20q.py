@@ -61,7 +61,8 @@ class Parser(argparse.ArgumentParser):
             "--save_word_specific_dataset", action=argparse.BooleanOptionalAction, default=False
         )
         self.add_argument(
-            "--feat_extraction_strategy", type=str, choices=['last-token', 'average', 'max'], default="last-token"
+            "--feat_extraction_strategy", type=str, choices=['last-token', 'average', 'max', 'first-token'],
+            default="last-token"
         )
         self.add_argument(
             "--no_cache", action=argparse.BooleanOptionalAction, default=False
@@ -81,6 +82,40 @@ class Parser(argparse.ArgumentParser):
         self.add_argument(
             "--debug", action=argparse.BooleanOptionalAction, default=False
         )
+
+
+def get_avg_features(feat, data):
+    # feat: (batch_size, seq_len, hidden_size)
+    # this is the last_hidden_state;
+    # this includes padding tokens, so we need to mask them
+    mask = data.attention_mask
+    feat = (feat * mask.unsqueeze(-1).float()).sum(dim=1) / mask.sum(dim=1, keepdim=True)
+    return feat
+
+
+def get_max_features(feat, data):
+    # feat: (batch_size, seq_len, hidden_size)
+    # this is the last_hidden_state;
+    # this includes padding tokens, so we need to mask them
+    mask = data.attention_mask * 10 - 9
+    feat = (feat * mask.unsqueeze(-1).float()).max(dim=1).values
+    return feat
+
+
+def get_last_token_features(feat, data):
+    # feat: (batch_size, seq_len, hidden_size)
+    # this is the last_hidden_state;
+    # this includes padding tokens, so we need to mask them
+    mask = data.attention_mask
+    feat = feat[torch.arange(feat.size(0)), mask.sum(dim=1) - 1]
+    return feat
+
+
+def get_first_token_features(feat, data):
+    # feat: (batch_size, seq_len, hidden_size)
+    # this is the last_hidden_state;
+    feat = feat[torch.arange(feat.size(0)), 0]
+    return feat
 
 
 def load_features(dataset, test_word, test_idx):
@@ -128,12 +163,13 @@ def load_features(dataset, test_word, test_idx):
             with torch.no_grad():
                 feat = llm_feat_extractor.forward_features(data)
                 if args.feat_extraction_strategy == 'average':
-                    feat = feat.mean(dim=1)
+                    feat = get_avg_features(feat, data)
                 elif args.feat_extraction_strategy == 'max':
-                    feat = feat.max(dim=1).values
+                    feat = get_max_features(feat, data)
                 elif args.feat_extraction_strategy == 'last-token':
-                    # take embedding of the last token position in the last hidden state
-                    feat = feat[:, -1, :]
+                    feat = get_last_token_features(feat, data)
+                elif args.feat_extraction_strategy == 'first-token':
+                    feat = get_first_token_features(feat, data)
             features += list(feat)
 
         features = torch.stack(features, dim=0)
@@ -179,7 +215,7 @@ def run_bayesopt(words, features, targets, test_word, n_init_data=10, T=None, se
     np.random.seed(seed)
     torch.manual_seed(seed)
 
-    # Sort data in desceding order of targets
+    # Sort data in descending order of targets
     targets, _idxs = torch.sort(targets, descending=True)
     features = features[_idxs]
     words = [words[i] for i in _idxs]
@@ -328,7 +364,8 @@ def plot(results, aggregate=False):
         plt.legend(["Optimal", "BO", "Random"])
         plt.xlabel(r'$t$')
         plt.ylabel(r'Objective ($\uparrow$)')
-        plt.title(f"best_rank={res['best_rank']}, best_x={res['trace_x'][-1]}, best_y={round(res['trace_y'][-1], 4)}, steps={res['steps_to_opt']}")
+        plt.title(
+            f"best_rank={res['best_rank']}, best_x={res['trace_x'][-1]}, best_y={round(res['trace_y'][-1], 4)}, steps={res['steps_to_opt']}")
         plt.savefig(
             os.path.join(out_dir, f'{results["target"]}_T-{args.T}_init-{args.n_init_data}_seed-{results["seed"]}.png'))
         print(f'Saved plot at ' +
@@ -386,8 +423,8 @@ if __name__ == '__main__':
             'Words': pd_dataset['Words'],
             'Similarity': targets.tolist()
         }).sort_values(by=['Similarity'], ascending=False).to_csv(os.path.join(out_dir,
-                               f'{test_word}_{args.prompt_strategy}_{args.feat_extraction_strategy}_{args.model}.csv'),
-                  sep='\t', index=False)
+                                                                               f'{test_word}_{args.prompt_strategy}_{args.feat_extraction_strategy}_{args.model}.csv'),
+                                                                  sep='\t', index=False)
         print(f'Saved word-specific dataset to ' + os.path.join(out_dir,
                                                                 f'{test_word}_{args.prompt_strategy}_{args.feat_extraction_strategy}_{args.model}.csv'))
 
@@ -417,14 +454,15 @@ if __name__ == '__main__':
         "prompt_strategy": args.prompt_strategy,
         "feat_extraction_strategy": args.feat_extraction_strategy,
         "model": args.model,
-        "avg_elapsed_time": round(elapsed_time/args.n_seeds, 2),
+        "avg_elapsed_time": round(elapsed_time / args.n_seeds, 2),
         "results": {
             "avg_rank": np.mean([res["results"]["best_rank"] for res in all_results]),
             "avg_found": sum([1 for res in all_results if res["results"]["steps_to_opt"] != -1]) / args.n_seeds,
             "avg_steps_to_opt": np.mean(
                 [res["results"]["steps_to_opt"] for res in all_results if res["results"]["steps_to_opt"] != -1]),
             "avg_rank_rand": np.mean([res["results"]["best_rank_rand"] for res in all_results]),
-            "avg_found_rand": sum([1 for res in all_results if res["results"]["steps_to_opt_rand"] != -1]) / args.n_seeds,
+            "avg_found_rand": sum(
+                [1 for res in all_results if res["results"]["steps_to_opt_rand"] != -1]) / args.n_seeds,
             "avg_steps_to_opt_rand": np.mean(
                 [res["results"]["steps_to_opt_rand"] for res in all_results if
                  res["results"]["steps_to_opt_rand"] != -1]),
