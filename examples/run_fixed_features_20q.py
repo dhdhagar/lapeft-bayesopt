@@ -327,9 +327,9 @@ def run_bayesopt(words, features, targets, test_word, n_init_data=10, T=None, se
             trace_best_x_label_rand.append(trace_best_x_label_rand[-1])
 
     if best_y == ground_truth_max:
-        print(f'Optimum "{best_x_label}" found at step {steps_to_opt}.')
+        print(f'Hidden word ("{best_x_label}") found at step {steps_to_opt}.')
     else:
-        print(f'Optimum "{test_word}" not found. Best found: f(x="{best_x_label}") = {round(best_y, 3)}.')
+        print(f'Hidden word ("{test_word}") not found. Best found: f(x="{best_x_label}") = {round(best_y, 3)} (rank={best_rank}).')
 
     return {
         "target": test_word,
@@ -341,8 +341,12 @@ def run_bayesopt(words, features, targets, test_word, n_init_data=10, T=None, se
         "feat_extraction_strategy": args.feat_extraction_strategy,
         "model": args.model,
         "results": {
+            "best_found": trace_best_x_label[-1],
+            "best_y": trace_best_y[-1],
             "best_rank": best_rank,
             "steps_to_opt": steps_to_opt,
+            "best_found_rand": trace_best_x_label_rand[-1],
+            "best_y_rand": trace_best_y_rand[-1],
             "best_rank_rand": best_rank_rand,
             "steps_to_opt_rand": steps_to_opt_rand,
             "trace_y": trace_best_y,
