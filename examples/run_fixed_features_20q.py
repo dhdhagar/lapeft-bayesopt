@@ -316,7 +316,7 @@ if __name__ == '__main__':
         try:
             test_idx = int(args.test_idx_or_word)
         except ValueError:
-            test_idx = pd_dataset['Words'].index(args.test_idx_or_word)
+            test_idx = pd_dataset.index[pd_dataset["Words"] == args.test_idx_or_word].tolist()[0]
     test_word = pd_dataset['Words'][test_idx]
     print(f"Test word: {test_word}")
 
