@@ -17,8 +17,8 @@ for MODEL in $MODELS; do
         # Iterate over the feature aggregation strategies
         for AGGREGATION in $AGGREGATIONS; do
             echo "
-            Generating features for word: '$WORD', model: '$MODEL', prompt: '$PROMPT', aggregation: '$AGGREGATION'
-            -----------------------------------"
+Generating features for word: '$WORD', model: '$MODEL', prompt: '$PROMPT', aggregation: '$AGGREGATION'
+-----------------------------------"
             # Generate the features
             if [[ $MODEL == llama* ]]; then
                 # Run without cuda if model is llama (doing this to prevent OOM on blake)
