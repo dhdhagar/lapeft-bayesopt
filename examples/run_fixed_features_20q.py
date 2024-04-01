@@ -416,6 +416,7 @@ def plot(results, aggregate=False):
         plt.title(
             f"avg_rank={res['avg_rank']}, avg_rank_rand={res['avg_rank_rand']}")
         plt.savefig(os.path.join(out_dir, f'agg_{results["target"]}_T-{args.T}_init-{args.n_init_data}.png'))
+        print(f'Saved final plot at ' + os.path.join(out_dir, f'agg_{results["target"]}_T-{args.T}_init-{args.n_init_data}.png'))
 
 
 if __name__ == '__main__':
@@ -512,5 +513,6 @@ if __name__ == '__main__':
 
     with open(os.path.join(out_dir, 'results.json'), 'w') as fh:
         fh.write(json.dumps(final_res, indent=2))
+    print(f'\nSaved results to ' + os.path.join(out_dir, 'results.json'))
     # Plot aggregated results
     plot(final_res, aggregate=True)
