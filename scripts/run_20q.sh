@@ -39,7 +39,8 @@ while [[ $# -gt 0 ]]; do
 done
 
 # Echo all job arguments in one line
-echo "Job arguments: desc=${desc}, partition=${partition}, n_gpus=${n_gpus}, mem=${mem}, time=${time}"
+echo "
+Job arguments: desc=${desc}, partition=${partition}, n_gpus=${n_gpus}, mem=${mem}, time=${time}"
 # Echo all script arguments in one line
 echo "Script arguments: test_word=${TEST_WORD}, n_init_data=${N_INIT_DATA}, n_seeds=${N_SEEDS}, model=${MODEL}, prompt=${PROMPT}, feat=${FEAT}, steps=${STEPS}"
 
@@ -62,7 +63,8 @@ JOB_DESC=${desc} && JOB_NAME=${JOB_DESC}_$(date +%s) && \
       --prompt_strategy="${PROMPT}" \
       --feat_extraction_strategy="${FEAT}" \
       --T=${STEPS} \
-      --out_dir=${OUT_DIR}
-echo "Logs path: ${job_dir}/${JOB_NAME}"
+      --out_dir="${OUT_DIR}" \
+      --slurm_log_file="${job_dir}/${JOB_NAME}.log"
+echo "Log path: ${job_dir}/${JOB_NAME}.log"
 echo "Output path: ${OUT_DIR}
 "
