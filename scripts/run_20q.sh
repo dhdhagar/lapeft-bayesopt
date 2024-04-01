@@ -64,5 +64,5 @@ JOB_DESC=${desc} && JOB_NAME=${JOB_DESC}_$(date +%s) && \
       --T=${STEPS} \
       --out_dir=${OUT_DIR}
 echo "Logs path: ${job_dir}/${JOB_NAME}"
-echo "Output path: ${out_dir}
+echo "Output path: ${OUT_DIR}
 "
