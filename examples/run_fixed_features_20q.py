@@ -440,7 +440,7 @@ if __name__ == '__main__':
         except ValueError:
             test_idx = pd_dataset.index[pd_dataset["Words"] == args.test_idx_or_word].tolist()[0]
     test_word = pd_dataset['Words'][test_idx]
-    print(f'\nHIDDEN WORD: "{test_word}"\n')
+    print(f'\nHIDDEN WORD: "{test_word}"')
 
     # Add word representations and compute similarities
     features, targets = load_features(dataset=pd_dataset, test_word=test_word, test_idx=test_idx)

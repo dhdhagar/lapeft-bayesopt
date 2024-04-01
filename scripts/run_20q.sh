@@ -52,7 +52,7 @@ mkdir -p ${job_dir}
 OUT_DIR="outputs/${desc}/${TEST_WORD}_${MODEL}_${PROMPT}_${FEAT}_n${N_INIT_DATA}_t${STEPS}"
 
 # Submit job
-JOB_DESC=${desc} && JOB_NAME=${JOB_DESC}_$(date +%s) && \
+JOB_DESC=${desc}_${TEST_WORD}_${MODEL}_${PROMPT}_${FEAT}_n${N_INIT_DATA}_t${STEPS} && JOB_NAME=${JOB_DESC}_$(date +%s) && \
   sbatch -J ${JOB_NAME} -e ${job_dir}/${JOB_NAME}.err -o ${job_dir}/${JOB_NAME}.log \
     --partition=${partition} --gres=gpu:${n_gpus} --mem=${mem} --time=${time} scripts/run_sbatch.sh \
       examples/run_fixed_features_20q.py \
