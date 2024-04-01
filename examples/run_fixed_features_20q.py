@@ -65,6 +65,9 @@ class Parser(argparse.ArgumentParser):
             default="last-token"
         )
         self.add_argument(
+            "--exit_after_feat_extraction", action=argparse.BooleanOptionalAction, default=False
+        )
+        self.add_argument(
             "--no_cache", action=argparse.BooleanOptionalAction, default=False
         )
         self.add_argument(
@@ -420,7 +423,6 @@ if __name__ == '__main__':
     RUN_ID = str(int(time.time()))
     global out_dir
     out_dir = os.path.join("outputs", RUN_ID)
-    os.makedirs(out_dir, exist_ok=True)
 
     # Load dataset and select the test word
     pd_dataset = pd.read_csv(os.path.join(args.data_dir, f'{args.dataset}.csv'))
@@ -448,7 +450,12 @@ if __name__ == '__main__':
         print(f'Saved word-specific dataset to ' + os.path.join(dataset_dir,
                                                                 f'{test_word}_{args.prompt_strategy}_{args.feat_extraction_strategy}_{args.model}.csv'))
 
+    if args.exit_after_feat_extraction:
+        print('\nExiting after feature extraction.')
+        exit(0)
+
     # Run BO over multiple seeds
+    os.makedirs(out_dir, exist_ok=True)
     all_results = []
     start_time = time.time()
     for i in range(args.n_seeds):
