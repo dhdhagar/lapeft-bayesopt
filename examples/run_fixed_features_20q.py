@@ -35,6 +35,9 @@ class Parser(argparse.ArgumentParser):
             "--out_dir", type=str, default="outputs"
         )
         self.add_argument(
+            "--slurm_log_file", type=str
+        )
+        self.add_argument(
             "--dataset", type=str, default='twentyquestions-dev-1000'
         )
         self.add_argument(
@@ -264,7 +267,7 @@ def run_bayesopt(words, features, targets, test_word, n_init_data=10, T=None, se
     trace_best_x_label_rand = [best_x_label]
     steps_to_opt_rand = -1
 
-    pbar = tqdm.trange(T if T is not None else len(features) - n_init_data)
+    pbar = tqdm.trange(T if T is not None else len(features) - n_init_data, file=args.slurm_log_file)
     pbar.set_description(
         f'[Best f(x="{best_x_label}") = {best_y:.3f} (rank={word2rank[best_x_label]})]'
     )
