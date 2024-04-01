@@ -23,9 +23,9 @@ Generating features for word: '$WORD', model: '$MODEL', prompt: '$PROMPT', aggre
 "
             # Generate the features
             if [[ $MODEL == llama* ]]; then
-                # Don't run if aggregation is first-token and prompt is instruction for llama models
-                if [[ $AGGREGATION == "first-token" && $PROMPT == "instruction" ]]; then
-                    echo "Skipping first-token aggregation with instruction prompt for llama models."
+                # Don't run if aggregation is first-token for llama models
+                if [[ $AGGREGATION == "first-token"]]; then
+                    echo "Skipping first-token aggregation for llama models."
                     continue
                 fi
 
