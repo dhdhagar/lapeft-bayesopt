@@ -8,7 +8,7 @@ MODELS="t5-small t5-base t5-large llama-2-7b llama-2-13b llama-2-70b"
 # Define the prompting strategies
 PROMPTS="word instruction"
 # Define the feature aggregation strategies
-AGGREGATIONS="average last-token"
+AGGREGATIONS="average last-token first-token max"
 
 # Iterate over the models
 for MODEL in $MODELS; do
@@ -16,8 +16,9 @@ for MODEL in $MODELS; do
     for PROMPT in $PROMPTS; do
         # Iterate over the feature aggregation strategies
         for AGGREGATION in $AGGREGATIONS; do
-            echo "\nGenerating features for word: $WORD, model: $MODEL, prompt: $PROMPT, aggregation: $AGGREGATION"
-            echo "-----------------------------------\n"
+            echo "
+            Generating features for word: '$WORD', model: '$MODEL', prompt: '$PROMPT', aggregation: '$AGGREGATION'
+            -----------------------------------"
             # Generate the features
             if [[ $MODEL == llama* ]]; then
                 # Run without cuda if model is llama (doing this to prevent OOM on blake)
