@@ -63,8 +63,7 @@ JOB_DESC=${desc} && JOB_NAME=${JOB_DESC}_$(date +%s) && \
       --prompt_strategy="${PROMPT}" \
       --feat_extraction_strategy="${FEAT}" \
       --T=${STEPS} \
-      --out_dir="${OUT_DIR}" \
-      --slurm_log_file="${job_dir}/${JOB_NAME}.log"
+      --out_dir="${OUT_DIR}"
 echo "Log path: ${job_dir}/${JOB_NAME}.log"
 echo "Output path: ${OUT_DIR}
 "
