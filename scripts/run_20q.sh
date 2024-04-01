@@ -48,7 +48,7 @@ job_dir="jobs/${desc}"
 mkdir -p ${job_dir}
 
 # Determine output dir for script
-OUT_DIR="outputs/${desc}/${TEST_WORD}_${MODEL}_${PROMPT}_${FEAT}_${N_INIT_DATA}_${STEPS}"
+OUT_DIR="outputs/${desc}/${TEST_WORD}_${MODEL}_${PROMPT}_${FEAT}_n${N_INIT_DATA}_t${STEPS}"
 
 # Submit job
 JOB_DESC=${desc} && JOB_NAME=${JOB_DESC}_$(date +%s) && \
