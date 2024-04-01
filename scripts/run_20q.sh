@@ -3,7 +3,7 @@
 # Job defaults
 desc="20q"
 partition="gpu"
-n_gpus=1
+n_gpus="1080ti:1"
 mem="100G"
 time="0-1:00:00"
 
