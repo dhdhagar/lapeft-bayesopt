@@ -57,7 +57,11 @@ for TEST_WORD in $TEST_WORDS; do
                             --model $MODEL \
                             --prompt $PROMPT \
                             --feat $FEAT \
-                            --steps $STEP
+                            --steps $STEP \
+                            --partition $partition \
+                            --n_gpus $n_gpus \
+                            --mem $mem \
+                            --time $time
                     done
                 done
             done
