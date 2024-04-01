@@ -32,6 +32,9 @@ class Parser(argparse.ArgumentParser):
             "--data_dir", type=str, default='examples/data'
         )
         self.add_argument(
+            "--out_dir", type=str, default="outputs"
+        )
+        self.add_argument(
             "--dataset", type=str, default='twentyquestions-dev-1000'
         )
         self.add_argument(
@@ -422,7 +425,7 @@ if __name__ == '__main__':
     global RUN_ID
     RUN_ID = str(int(time.time()))
     global out_dir
-    out_dir = os.path.join("outputs", RUN_ID)
+    out_dir = os.path.join(args.out_dir, RUN_ID)
 
     # Load dataset and select the test word
     pd_dataset = pd.read_csv(os.path.join(args.data_dir, f'{args.dataset}.csv'))
