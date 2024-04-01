@@ -4,7 +4,7 @@
 desc="20q"
 partition="gpu"
 n_gpus=1
-mem="30G"
+mem="100G"
 time="0-2:00:00"
 
 # Script defaults
