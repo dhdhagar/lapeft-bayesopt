@@ -1,28 +1,28 @@
+import os
+import time
+import json
+import sys
+import argparse
+
 import numpy as np
 import pandas as pd
 import torch
 import torch.utils.data as data_utils
 import tqdm
 from sklearn.utils import shuffle as skshuffle
-import os
-import time
-import json
 import matplotlib.pyplot as plt
 from torch.nn.functional import cosine_similarity
+
 # Non-finetuned surrogates. The finetuned surrogates are in lapeft_bayesopt.surrogates
 from fixed_feat_surrogate import LaplaceBoTorch
-
 from lapeft_bayesopt.foundation_models.t5 import T5Regressor
 from lapeft_bayesopt.foundation_models.llama2 import Llama2Regressor
 from lapeft_bayesopt.foundation_models.utils import get_llama2_tokenizer, get_t5_tokenizer
 from lapeft_bayesopt.utils.acqf import thompson_sampling
 from lapeft_bayesopt.utils import helpers
-
 # Our self-defined problems, using the format provided by lapeft-bayesopt
 from data_processor import TwentyQuestionsDataProcessor
 from prompting import MyPromptBuilder
-
-import argparse
 
 
 class Parser(argparse.ArgumentParser):
@@ -33,9 +33,6 @@ class Parser(argparse.ArgumentParser):
         )
         self.add_argument(
             "--out_dir", type=str, default="outputs"
-        )
-        self.add_argument(
-            "--slurm_log_file", type=str
         )
         self.add_argument(
             "--dataset", type=str, default='twentyquestions-dev-1000'
@@ -267,7 +264,7 @@ def run_bayesopt(words, features, targets, test_word, n_init_data=10, T=None, se
     trace_best_x_label_rand = [best_x_label]
     steps_to_opt_rand = -1
 
-    pbar = tqdm.trange(T if T is not None else len(features) - n_init_data, file=args.slurm_log_file)
+    pbar = tqdm.trange(T if T is not None else len(features) - n_init_data, file=sys.stdout)
     pbar.set_description(
         f'[Best f(x="{best_x_label}") = {best_y:.3f} (rank={word2rank[best_x_label]})]'
     )
@@ -352,7 +349,8 @@ def run_bayesopt(words, features, targets, test_word, n_init_data=10, T=None, se
     if best_y == ground_truth_max:
         print(f'Hidden word ("{best_x_label}") found at step {steps_to_opt}.')
     else:
-        print(f'Hidden word ("{test_word}") not found. Best found: f(x="{best_x_label}") = {round(best_y, 3)} (rank={best_rank}).')
+        print(
+            f'Hidden word ("{test_word}") not found. Best found: f(x="{best_x_label}") = {round(best_y, 3)} (rank={best_rank}).')
 
     return {
         "target": test_word,
@@ -416,7 +414,8 @@ def plot(results, aggregate=False):
         plt.title(
             f"avg_rank={res['avg_rank']}, avg_rank_rand={res['avg_rank_rand']}")
         plt.savefig(os.path.join(out_dir, f'agg_{results["target"]}_T-{args.T}_init-{args.n_init_data}.png'))
-        print(f'Saved final plot at ' + os.path.join(out_dir, f'agg_{results["target"]}_T-{args.T}_init-{args.n_init_data}.png'))
+        print(f'Saved final plot at ' + os.path.join(out_dir,
+                                                     f'agg_{results["target"]}_T-{args.T}_init-{args.n_init_data}.png'))
 
 
 if __name__ == '__main__':
