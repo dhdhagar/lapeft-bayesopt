@@ -1,4 +1,4 @@
-#!/usr/bin/env sh
+#!/bin/bash
 # This script is used to generate and cache features per model for a given word accepted as input
 
 # Get the word from the first argument
