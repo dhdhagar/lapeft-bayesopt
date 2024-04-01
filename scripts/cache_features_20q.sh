@@ -17,10 +17,18 @@ for MODEL in $MODELS; do
         # Iterate over the feature aggregation strategies
         for AGGREGATION in $AGGREGATIONS; do
             echo "
+-----------------------------------
 Generating features for word: '$WORD', model: '$MODEL', prompt: '$PROMPT', aggregation: '$AGGREGATION'
------------------------------------"
+-----------------------------------
+"
             # Generate the features
             if [[ $MODEL == llama* ]]; then
+                # Don't run if aggregation is first-token and prompt is instruction for llama models
+                if [[ $AGGREGATION == "first-token" && $PROMPT == "instruction" ]]; then
+                    echo "Skipping first-token aggregation with instruction prompt for llama models."
+                    continue
+                fi
+
                 # Run without cuda if model is llama (doing this to prevent OOM on blake)
                 python examples/run_fixed_features_20q.py \
                   --test_idx_or_word $WORD \
