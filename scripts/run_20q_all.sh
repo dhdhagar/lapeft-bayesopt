@@ -10,6 +10,7 @@ time="0-2:00:00"
 # Script defaults
 MODELS="t5-small t5-base t5-large llama-2-7b llama-2-13b"  # llama-2-70b
 PROMPTS="word instruction"
+HINT=""  # Support for only one hint currently
 FEATS="average last-token"
 TEST_WORDS="computer"
 N_INIT_DATAS="1 5 10"
@@ -30,6 +31,7 @@ while [[ $# -gt 0 ]]; do
         --n_seeds) N_SEEDS="$2"; shift ;;
         --models) MODELS="$2"; shift ;;
         --prompts) PROMPTS="$2"; shift ;;
+        --hint) HINT="$2"; shift ;;
         --feats) FEATS="$2"; shift ;;
         --steps) STEPS="$2"; shift ;;
         *) echo "Invalid option: $1" >&2; exit 1 ;;
@@ -56,6 +58,7 @@ for TEST_WORD in $TEST_WORDS; do
                             --n_seeds $N_SEEDS \
                             --model $MODEL \
                             --prompt $PROMPT \
+                            --hint "$HINT" \
                             --feat $FEAT \
                             --steps $STEP \
                             --partition $partition \

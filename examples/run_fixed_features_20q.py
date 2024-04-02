@@ -41,7 +41,10 @@ class Parser(argparse.ArgumentParser):
             "--test_idx_or_word", type=str
         )
         self.add_argument(
-            "--prompt_strategy", type=str, choices=['word', 'instruction'], default='word'
+            "--prompt_strategy", type=str, choices=['word', 'instruction', 'hint'], default='word'
+        )
+        self.add_argument(
+            "--hint", type=str, default=""
         )
         self.add_argument(
             "--model", type=str,
@@ -130,7 +133,7 @@ def load_features(dataset, test_word, test_idx):
     """
     CACHE_FPATH = os.path.join(args.data_dir, f'cache/{args.dataset}/')
     os.makedirs(CACHE_FPATH, exist_ok=True)
-    CACHE_FNAME = f'{test_word}_{args.prompt_strategy}_{args.feat_extraction_strategy}_{args.model}'
+    CACHE_FNAME = f'{test_word}_{args.prompt_strategy}{"-" + "-".join(args.hint.split()) if args.prompt_strategy == "hint" else ""}_{args.feat_extraction_strategy}_{args.model}'
 
     # If cache exists then just load it, otherwise compute the features
     if not args.no_cache and os.path.exists(os.path.join(CACHE_FPATH, f'{CACHE_FNAME}_feats.bin')):
@@ -158,7 +161,7 @@ def load_features(dataset, test_word, test_idx):
         llm_feat_extractor.freeze_params()
 
         # Build the textual representation based on the prompt strategy
-        prompt_builder = MyPromptBuilder(kind=args.prompt_strategy)
+        prompt_builder = MyPromptBuilder(kind=args.prompt_strategy, hint=args.hint)
         data_processor = TwentyQuestionsDataProcessor(prompt_builder, tokenizer)
         dataloader = data_processor.get_dataloader(dataset, shuffle=False)
 
@@ -359,6 +362,7 @@ def run_bayesopt(words, features, targets, test_word, n_init_data=10, T=None, se
         "T": T if T is not None else None,
         "opt_val": ground_truth_max,
         "prompt_strategy": args.prompt_strategy,
+        "hint": args.hint,
         "feat_extraction_strategy": args.feat_extraction_strategy,
         "model": args.model,
         "results": {
@@ -485,6 +489,7 @@ if __name__ == '__main__':
         "T": all_results[-1]["T"],
         "opt_val": all_results[-1]["opt_val"],
         "prompt_strategy": args.prompt_strategy,
+        "hint": args.hint,
         "feat_extraction_strategy": args.feat_extraction_strategy,
         "model": args.model,
         "avg_elapsed_time": round(elapsed_time / args.n_seeds, 2),

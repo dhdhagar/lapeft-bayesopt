@@ -1,5 +1,22 @@
 #!/bin/bash -e
 
+# Define a function to split a word by spaces and join by hyphen
+split_and_join() {
+  local word="$1"
+  local hyphenated_word=""
+
+  # Split the word by spaces
+  while IFS= read -r -d ' ' part || [[ -n "$part" ]]; do
+    # Append each part with a hyphen
+    hyphenated_word+="${part}-"
+  done <<< "$word"
+
+  # Remove the trailing hyphen
+  hyphenated_word="${hyphenated_word%-}"
+
+  echo "$hyphenated_word"
+}
+
 # Job defaults
 desc="20q"
 partition="gpu"
@@ -10,6 +27,7 @@ time="0-1:00:00"
 # Script defaults
 MODEL="t5-small"
 PROMPT="word"
+HINT=""
 FEAT="average"
 TEST_WORD="computer"
 N_INIT_DATA=10
@@ -31,6 +49,7 @@ while [[ $# -gt 0 ]]; do
         --n_seeds) N_SEEDS="$2"; shift ;;
         --model) MODEL="$2"; shift ;;
         --prompt) PROMPT="$2"; shift ;;
+        --hint) HINT="$2"; shift ;;
         --feat) FEAT="$2"; shift ;;
         --steps) STEPS="$2"; shift ;;
         *) echo "Invalid option: $1" >&2; exit 1 ;;
@@ -49,10 +68,15 @@ job_dir="jobs/${desc}"
 mkdir -p ${job_dir}
 
 # Determine output dir for script
-OUT_DIR="outputs/${desc}/${TEST_WORD}_${MODEL}_${PROMPT}_${FEAT}_n${N_INIT_DATA}_t${STEPS}"
+if [[ $PROMPT == "hint" ]]; then
+  EXPERIMENT="${desc}/${TEST_WORD}_${MODEL}_${PROMPT}-$(split_and_join "${HINT}")_${FEAT}_n${N_INIT_DATA}_t${STEPS}"
+else
+  EXPERIMENT="${desc}/${TEST_WORD}_${MODEL}_${PROMPT}_${FEAT}_n${N_INIT_DATA}_t${STEPS}"
+fi
+OUT_DIR = "outputs/${EXPERIMENT}"
 
 # Submit job
-JOB_DESC=${desc}_${TEST_WORD}_${MODEL}_${PROMPT}_${FEAT}_n${N_INIT_DATA}_t${STEPS} && JOB_NAME=${JOB_DESC}_$(date +%s) && \
+JOB_DESC=${desc}_${EXPERIMENT} && JOB_NAME=${JOB_DESC}_$(date +%s) && \
   sbatch -J ${JOB_NAME} -e ${job_dir}/${JOB_NAME}.err -o ${job_dir}/${JOB_NAME}.log \
     --partition=${partition} --gres=gpu:${n_gpus} --mem=${mem} --time=${time} scripts/run_sbatch.sh \
       examples/run_fixed_features_20q.py \
@@ -61,6 +85,7 @@ JOB_DESC=${desc}_${TEST_WORD}_${MODEL}_${PROMPT}_${FEAT}_n${N_INIT_DATA}_t${STEP
       --n_seeds=${N_SEEDS} \
       --model="${MODEL}" \
       --prompt_strategy="${PROMPT}" \
+      --hint="${HINT}" \
       --feat_extraction_strategy="${FEAT}" \
       --T=${STEPS} \
       --out_dir="${OUT_DIR}"
