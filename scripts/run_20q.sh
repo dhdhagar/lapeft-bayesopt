@@ -61,7 +61,7 @@ done
 echo "
 Job arguments: desc=${desc}, partition=${partition}, n_gpus=${n_gpus}, mem=${mem}, time=${time}"
 # Echo all script arguments in one line
-echo "Script arguments: test_word=${TEST_WORD}, n_init_data=${N_INIT_DATA}, n_seeds=${N_SEEDS}, model=${MODEL}, prompt=${PROMPT}, feat=${FEAT}, steps=${STEPS}"
+echo "Script arguments: test_word=${TEST_WORD}, n_init_data=${N_INIT_DATA}, n_seeds=${N_SEEDS}, model=${MODEL}, prompt=${PROMPT}, hint="${HINT}", feat=${FEAT}, steps=${STEPS}"
 
 # Create log directory for the job
 job_dir="jobs/${desc}"
@@ -73,7 +73,7 @@ if [[ $PROMPT == "hint" ]]; then
 else
   EXPERIMENT="${desc}/${TEST_WORD}_${MODEL}_${PROMPT}_${FEAT}_n${N_INIT_DATA}_t${STEPS}"
 fi
-OUT_DIR = "outputs/${EXPERIMENT}"
+OUT_DIR="outputs/${EXPERIMENT}"
 
 # Submit job
 JOB_DESC=${desc}_${EXPERIMENT} && JOB_NAME=${JOB_DESC}_$(date +%s) && \

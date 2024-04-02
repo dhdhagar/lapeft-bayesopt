@@ -455,10 +455,10 @@ if __name__ == '__main__':
             'Words': pd_dataset['Words'],
             'Similarity': targets.tolist()
         }).sort_values(by=['Similarity'], ascending=False).to_csv(os.path.join(dataset_dir,
-                                                                               f'{test_word}_{args.prompt_strategy}_{args.feat_extraction_strategy}_{args.model}.csv'),
+                                                                               f'{test_word}_{args.prompt_strategy}{"-" + "-".join(args.hint.split()) if args.prompt_strategy == "hint" else ""}_{args.feat_extraction_strategy}_{args.model}.csv'),
                                                                   sep='\t', index=False)
         print(f'Saved word-specific dataset to ' + os.path.join(dataset_dir,
-                                                                f'{test_word}_{args.prompt_strategy}_{args.feat_extraction_strategy}_{args.model}.csv'))
+                                                                f'{test_word}_{args.prompt_strategy}{"-" + "-".join(args.hint.split()) if args.prompt_strategy == "hint" else ""}_{args.feat_extraction_strategy}_{args.model}.csv'))
 
     if args.exit_after_feat_extraction:
         print('\nExiting after feature extraction.')
