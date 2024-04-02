@@ -69,11 +69,11 @@ mkdir -p ${job_dir}
 
 # Determine output dir for script
 if [[ $PROMPT == "hint" ]]; then
-  EXPERIMENT="${desc}/${TEST_WORD}_${MODEL}_${PROMPT}-$(split_and_join "${HINT}")_${FEAT}_n${N_INIT_DATA}_t${STEPS}"
+  EXPERIMENT="${TEST_WORD}_${MODEL}_${PROMPT}-$(split_and_join "${HINT}")_${FEAT}_n${N_INIT_DATA}_t${STEPS}"
 else
-  EXPERIMENT="${desc}/${TEST_WORD}_${MODEL}_${PROMPT}_${FEAT}_n${N_INIT_DATA}_t${STEPS}"
+  EXPERIMENT="${TEST_WORD}_${MODEL}_${PROMPT}_${FEAT}_n${N_INIT_DATA}_t${STEPS}"
 fi
-OUT_DIR="outputs/${EXPERIMENT}"
+OUT_DIR="outputs/${desc}/${EXPERIMENT}"
 
 # Submit job
 JOB_DESC=${desc}_${EXPERIMENT} && JOB_NAME=${JOB_DESC}_$(date +%s) && \
