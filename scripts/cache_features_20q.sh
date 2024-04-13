@@ -8,7 +8,7 @@ MODELS="t5-small t5-base t5-large llama-2-7b llama-2-13b llama-2-70b"
 # Define the prompting strategies
 PROMPTS="word instruction"
 # Define the feature aggregation strategies
-AGGREGATIONS="average last-token first-token max"
+AGGREGATIONS="average last-token"
 
 # Iterate over the models
 for MODEL in $MODELS; do
@@ -31,22 +31,24 @@ Generating features for word: '$WORD', model: '$MODEL', prompt: '$PROMPT', aggre
 
                 # Run without cuda if model is llama (doing this to prevent OOM on blake)
                 python examples/run_fixed_features_20q.py \
-                  --test_idx_or_word $WORD \
+                  --dataset $WORD \
                   --model $MODEL \
                   --prompt_strategy $PROMPT \
                   --feat_extraction_strategy $AGGREGATION \
                   --save_word_specific_dataset \
                   --exit_after_feat_extraction \
+                  --reset_cache \
                   --no-cuda
             else
                 # Run with cuda if model is t5
                 python examples/run_fixed_features_20q.py \
-                  --test_idx_or_word $WORD \
+                  --dataset $WORD \
                   --model $MODEL \
                   --prompt_strategy $PROMPT \
                   --feat_extraction_strategy $AGGREGATION \
                   --save_word_specific_dataset \
-                  --exit_after_feat_extraction
+                  --exit_after_feat_extraction \
+                  --reset_cache
             fi
         done
     done

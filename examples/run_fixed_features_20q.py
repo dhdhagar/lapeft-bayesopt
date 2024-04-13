@@ -29,13 +29,16 @@ class Parser(argparse.ArgumentParser):
     def __init__(self):
         super().__init__()
         self.add_argument(
-            "--data_dir", type=str, default='examples/data'
+            "--data_dir", type=str, default='data/twentyquestions/datasets/word2vec'
+        )
+        self.add_argument(
+            "--cache_dir", type=str, default='cache'
         )
         self.add_argument(
             "--out_dir", type=str, default="outputs"
         )
         self.add_argument(
-            "--dataset", type=str, default='twentyquestions-dev-1000'
+            "--dataset", type=str
         )
         self.add_argument(
             "--test_idx_or_word", type=str
@@ -61,7 +64,7 @@ class Parser(argparse.ArgumentParser):
             "--cuda", action=argparse.BooleanOptionalAction, default=True
         )
         self.add_argument(
-            "--rescale_scores", action=argparse.BooleanOptionalAction, default=True
+            "--rescale_scores", action=argparse.BooleanOptionalAction, default=False
         )
         self.add_argument(
             "--save_word_specific_dataset", action=argparse.BooleanOptionalAction, default=False
@@ -74,7 +77,7 @@ class Parser(argparse.ArgumentParser):
             "--exit_after_feat_extraction", action=argparse.BooleanOptionalAction, default=False
         )
         self.add_argument(
-            "--no_cache", action=argparse.BooleanOptionalAction, default=False
+            "--reset_cache", action=argparse.BooleanOptionalAction, default=False
         )
         self.add_argument(
             "--seed", type=int, default=9999
@@ -131,12 +134,12 @@ def load_features(dataset, test_word, test_idx):
     """
     Load cached features, if exists, otherwise compute and cache them.
     """
-    CACHE_FPATH = os.path.join(args.data_dir, f'cache/{args.dataset}/')
+    CACHE_FPATH = os.path.join(args.cache_dir, args.data_dir.split('/')[-1], f'{args.dataset}')
     os.makedirs(CACHE_FPATH, exist_ok=True)
     CACHE_FNAME = f'{test_word}_{args.prompt_strategy}{"-" + "-".join(args.hint.split()) if args.prompt_strategy == "hint" else ""}_{args.feat_extraction_strategy}_{args.model}'
 
     # If cache exists then just load it, otherwise compute the features
-    if not args.no_cache and os.path.exists(os.path.join(CACHE_FPATH, f'{CACHE_FNAME}_feats.bin')):
+    if not args.reset_cache and os.path.exists(os.path.join(CACHE_FPATH, f'{CACHE_FNAME}_feats.bin')):
         features = torch.load(os.path.join(CACHE_FPATH, f'{CACHE_FNAME}_feats.bin'))
         targets = torch.load(os.path.join(CACHE_FPATH, f'{CACHE_FNAME}_targets.bin'))
     else:
@@ -180,11 +183,18 @@ def load_features(dataset, test_word, test_idx):
                 elif args.feat_extraction_strategy == 'first-token':
                     feat = get_first_token_features(feat, data)
             features += list(feat)
+            if 'labels' in data:
+                targets += list(data['labels'])
 
         features = torch.stack(features, dim=0)
-        targets = cosine_similarity(features, features[test_idx]).cpu()
-        targets = targets.clamp(min=-1., max=1.)
+        if len(targets) > 0:
+            targets = torch.stack(targets, dim=0)
+            targets = targets.clamp(min=0., max=1.)  # Used 0-1 normalization for similarity scores
+        else:
+            targets = cosine_similarity(features, features[test_idx])
+            targets = targets.clamp(min=-1., max=1.)
         features = features.cpu()
+        targets = targets.cpu()
 
         if args.rescale_scores:
             # Rescale scores between [0, 1]
@@ -436,29 +446,38 @@ if __name__ == '__main__':
 
     # Load dataset and select the test word
     pd_dataset = pd.read_csv(os.path.join(args.data_dir, f'{args.dataset}.csv'))
-    if args.test_idx_or_word is None:
-        test_idx = np.random.randint(len(pd_dataset))
-    else:
-        try:
-            test_idx = int(args.test_idx_or_word)
-        except ValueError:
-            test_idx = pd_dataset.index[pd_dataset["Words"] == args.test_idx_or_word].tolist()[0]
-    test_word = pd_dataset['Words'][test_idx]
-    print(f'\nHIDDEN WORD: "{test_word}"')
 
-    # Add word representations and compute similarities
-    features, targets = load_features(dataset=pd_dataset, test_word=test_word, test_idx=test_idx)
-    if args.save_word_specific_dataset:
-        dataset_dir = 'data/twentyquestions/datasets'
-        os.makedirs(dataset_dir, exist_ok=True)
-        pd.DataFrame({
-            'Words': pd_dataset['Words'],
-            'Similarity': targets.tolist()
-        }).sort_values(by=['Similarity'], ascending=False).to_csv(os.path.join(dataset_dir,
-                                                                               f'{test_word}_{args.prompt_strategy}{"-" + "-".join(args.hint.split()) if args.prompt_strategy == "hint" else ""}_{args.feat_extraction_strategy}_{args.model}.csv'),
-                                                                  sep='\t', index=False)
-        print(f'Saved word-specific dataset to ' + os.path.join(dataset_dir,
-                                                                f'{test_word}_{args.prompt_strategy}{"-" + "-".join(args.hint.split()) if args.prompt_strategy == "hint" else ""}_{args.feat_extraction_strategy}_{args.model}.csv'))
+    if 'Similarity' not in pd_dataset.columns:
+        # Compute similarities and create dataset
+        if args.test_idx_or_word is None:
+            test_idx = np.random.randint(len(pd_dataset))
+        else:
+            try:
+                test_idx = int(args.test_idx_or_word)
+            except ValueError:
+                test_idx = pd_dataset.index[pd_dataset["Words"] == args.test_idx_or_word].tolist()[0]
+        test_word = pd_dataset['Words'][test_idx]
+        print(f'\nHIDDEN WORD: "{test_word}"')
+
+        # Add word representations and compute similarities
+        features, targets = load_features(dataset=pd_dataset, test_word=test_word, test_idx=test_idx)
+        if args.save_word_specific_dataset:
+            dataset_dir = 'data/twentyquestions/datasets'
+            os.makedirs(dataset_dir, exist_ok=True)
+            pd.DataFrame({
+                'Words': pd_dataset['Words'],
+                'Similarity': targets.tolist()
+            }).sort_values(by=['Similarity'], ascending=False).to_csv(os.path.join(dataset_dir,
+                                                                                   f'{test_word}_{args.prompt_strategy}{"-" + "-".join(args.hint.split()) if args.prompt_strategy == "hint" else ""}_{args.feat_extraction_strategy}_{args.model}.csv'),
+                                                                      sep='\t', index=False)
+            print(f'Saved word-specific dataset to ' + os.path.join(dataset_dir,
+                                                                    f'{test_word}_{args.prompt_strategy}{"-" + "-".join(args.hint.split()) if args.prompt_strategy == "hint" else ""}_{args.feat_extraction_strategy}_{args.model}.csv'))
+    else:
+        test_idx = 0
+        test_word = pd_dataset['Words'][test_idx]
+        print(f'\nHIDDEN WORD: "{test_word}"')
+        features, targets = load_features(dataset=pd_dataset, test_word=test_word, test_idx=test_idx)
+
 
     if args.exit_after_feat_extraction:
         print('\nExiting after feature extraction.')

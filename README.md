@@ -1,3 +1,12 @@
+# Custom instructions
+
+```shell
+# Install gensim to create word2vec datasets
+pip install gensim
+```
+
+---
+
 # `lapeft-bayesopt`: Discrete Bayesian Optimization with LLM + PEFT + Laplace Approximation
 
 This is the accompanying library of the paper [_A Sober Look at LLMs for Material Discovery: Are They Actually Good for Bayesian Optimization Over Molecules?_](https://arxiv.org/abs/2402.05015).

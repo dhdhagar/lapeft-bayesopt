@@ -45,7 +45,9 @@ class DataProcessor:
                 enc = self.tokenizer.encode(prompt, add_special_tokens=False)
                 assert len(enc) == 1
                 out = {'input_ids': enc[0]}
-            out['labels'] = self._get_targets(row)
+            labels = self._get_targets(row)
+            if labels is not None:
+                out['labels'] = labels
             return out
 
         dataset = dataset.map(tokenize, remove_columns=self._get_columns_to_remove(), num_proc=4)
@@ -55,7 +57,7 @@ class DataProcessor:
             collate_fn=DataCollatorWithPadding(self.tokenizer)
         )
 
-    def _get_targets(self, row: Union[pd.Series, dict], default=-1) -> torch.Tensor:
+    def _get_targets(self, row: Union[pd.Series, dict]) -> torch.Tensor:
         """
         Arguments:
         ----------
@@ -67,10 +69,13 @@ class DataProcessor:
         targets: torch.Tensor
             Regression target(s). Shape (self.num_outputs,).
         """
-        if isinstance(self.target_col, list):
-            return [row.get(col, default) for col in self.target_col]
-        else:
-            return [row.get(self.target_col, default)]
+        try:
+            if isinstance(self.target_col, list):
+                return [row.get(col) for col in self.target_col]
+            else:
+                return [row.get(self.target_col)]
+        except KeyError:
+            return None
 
     def _get_columns_to_remove(self) -> List[str]:
         """
