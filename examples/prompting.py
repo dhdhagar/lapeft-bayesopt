@@ -20,5 +20,8 @@ class MyPromptBuilder(PromptBuilder):
         elif self.kind == 'hint':
             # TwentyQuestions
             return f'The task is to find a hidden test word by guessing new words. {self.hint} Our next guess is {x}.'
+        elif self.kind == 'hint-goodness':
+            # TwentyQuestions
+            return f'The task is to find a hidden test word by guessing new words. {self.hint} Our next guess is {x}. Is that a good guess? '
         else:
             return NotImplementedError

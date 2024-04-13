@@ -44,7 +44,7 @@ class Parser(argparse.ArgumentParser):
             "--test_idx_or_word", type=str
         )
         self.add_argument(
-            "--prompt_strategy", type=str, choices=['word', 'instruction', 'hint'], default='word'
+            "--prompt_strategy", type=str, choices=['word', 'instruction', 'hint', 'hint-goodness'], default='word'
         )
         self.add_argument(
             "--hint", type=str, default=""
@@ -83,10 +83,10 @@ class Parser(argparse.ArgumentParser):
             "--seed", type=int, default=9999
         )
         self.add_argument(
-            "--n_init_data", type=int, default=2
+            "--n_init_data", type=int, default=5
         )
         self.add_argument(
-            "--T", type=int, default=20
+            "--T", type=int, default=100
         )
         self.add_argument(
             "--n_seeds", type=int, default=1
@@ -136,7 +136,7 @@ def load_features(dataset, test_word, test_idx):
     """
     CACHE_FPATH = os.path.join(args.cache_dir, args.data_dir.split('/')[-1], f'{args.dataset}')
     os.makedirs(CACHE_FPATH, exist_ok=True)
-    CACHE_FNAME = f'{test_word}_{args.prompt_strategy}{"-" + "-".join(args.hint.split()) if args.prompt_strategy == "hint" else ""}_{args.feat_extraction_strategy}_{args.model}'
+    CACHE_FNAME = f'{test_word}_{args.prompt_strategy}{"-" + "-".join(args.hint.split()) if args.prompt_strategy.startswith("hint") else ""}_{args.feat_extraction_strategy}_{args.model}'
 
     # If cache exists then just load it, otherwise compute the features
     if not args.reset_cache and os.path.exists(os.path.join(CACHE_FPATH, f'{CACHE_FNAME}_feats.bin')):
@@ -468,10 +468,10 @@ if __name__ == '__main__':
                 'Words': pd_dataset['Words'],
                 'Similarity': targets.tolist()
             }).sort_values(by=['Similarity'], ascending=False).to_csv(os.path.join(dataset_dir,
-                                                                                   f'{test_word}_{args.prompt_strategy}{"-" + "-".join(args.hint.split()) if args.prompt_strategy == "hint" else ""}_{args.feat_extraction_strategy}_{args.model}.csv'),
+                                                                                   f'{test_word}_{args.prompt_strategy}{"-" + "-".join(args.hint.split()) if args.prompt_strategy.startswith("hint") else ""}_{args.feat_extraction_strategy}_{args.model}.csv'),
                                                                       sep='\t', index=False)
             print(f'Saved word-specific dataset to ' + os.path.join(dataset_dir,
-                                                                    f'{test_word}_{args.prompt_strategy}{"-" + "-".join(args.hint.split()) if args.prompt_strategy == "hint" else ""}_{args.feat_extraction_strategy}_{args.model}.csv'))
+                                                                    f'{test_word}_{args.prompt_strategy}{"-" + "-".join(args.hint.split()) if args.prompt_strategy.startswith("hint") else ""}_{args.feat_extraction_strategy}_{args.model}.csv'))
     else:
         test_idx = 0
         test_word = pd_dataset['Words'][test_idx]

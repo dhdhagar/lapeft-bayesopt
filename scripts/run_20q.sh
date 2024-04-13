@@ -30,9 +30,9 @@ PROMPT="word"
 HINT=""
 FEAT="average"
 TEST_WORD="computer"
-N_INIT_DATA=10
+N_INIT_DATA=5
 N_SEEDS=5
-STEPS=50
+STEPS=100
 
 # Parse arguments
 while [[ $# -gt 0 ]]; do
@@ -80,7 +80,7 @@ JOB_DESC=${desc}_${EXPERIMENT} && JOB_NAME=${JOB_DESC}_$(date +%s) && \
   sbatch -J ${JOB_NAME} -e ${job_dir}/${JOB_NAME}.err -o ${job_dir}/${JOB_NAME}.log \
     --partition=${partition} --gres=gpu:${n_gpus} --mem=${mem} --time=${time} scripts/run_sbatch.sh \
       examples/run_fixed_features_20q.py \
-      --test_idx_or_word="${TEST_WORD}" \
+      --dataset="${TEST_WORD}" \
       --n_init_data=${N_INIT_DATA} \
       --n_seeds=${N_SEEDS} \
       --model="${MODEL}" \

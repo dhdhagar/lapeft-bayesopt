@@ -13,9 +13,9 @@ PROMPTS="word instruction"
 HINT=""  # Support for only one hint currently
 FEATS="average last-token"
 TEST_WORDS="computer"
-N_INIT_DATAS="1 5 10"
+N_INIT_DATAS="5 10"  # "1 5 10"
 N_SEEDS=5
-STEPS="50 100"
+STEPS="100"  # "50 100"
 
 # Parse arguments
 while [[ $# -gt 0 ]]; do
