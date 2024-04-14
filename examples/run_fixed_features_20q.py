@@ -421,8 +421,8 @@ def plot(results, aggregate=False):
             y_key = 'trace_rank'
             opt_val = 1
             y_label = r'Rank ($\downarrow$)'
-        title_experiment = f"word={results['target']}, model={results['model']}, feat={results['feat_extraction_strategy']}, \nprompt={results['prompt_strategy']}{(', hint=' + results['hint']) if results['prompt_strategy'].startswith('hint') else ''}, \nn_init_data={results['n_init_data']}, seed={results['seed']}"
-        title_result = f"best_x={res['trace_x'][-1]}, best_rank={res['best_rank']}, best_obj={round(res['trace_y'][-1], 4)}, steps={res['steps_to_opt']}"
+        title_experiment = f"word={results['target']}, model={results['model']}, feat={results['feat_extraction_strategy']}, prompt={results['prompt_strategy']}{(', hint=' + results['hint']) if results['prompt_strategy'].startswith('hint') else ''}, n_init_data={results['n_init_data']}, seed={results['seed']}"
+        title_result = f"best\_x={res['trace_x'][-1]}, best\_rank={res['best_rank']}, best\_obj={round(res['trace_y'][-1], 4)}, steps={res['steps_to_opt']}"
         t = np.arange(len(res[y_key]))
         plt.axhline(opt_val, color='black', linestyle='dashed', label="Optimal")
         plt.plot(t, res[y_key], label="BO")
@@ -430,8 +430,8 @@ def plot(results, aggregate=False):
         plt.legend()
         plt.xlabel(r'$t$')
         plt.ylabel(y_label)
-        plt.title(f'{title_experiment}\n{title_result}')
-        plt.savefig(os.path.join(out_dir, f'seed-{results["seed"]}.png'))
+        plt.title(f'{title_experiment}\n{title_result}', wrap=True)
+        plt.savefig(os.path.join(out_dir, f'seed-{results["seed"]}.png'), bbox_inches="tight")
         print(f'Saved plot at ' + os.path.join(out_dir, f'seed-{results["seed"]}.png'))
     else:
         res = results['results']
@@ -439,13 +439,13 @@ def plot(results, aggregate=False):
             y_key = 'trace_y'
             opt_val = results['opt_val']
             y_label = r'Objective ($\uparrow$)'
-            title_result = f"avg_obj={res['trace_y_mean'][-1]} avg_obj_rand={res['trace_y_mean_rand'][-1]}"
+            title_result = f"avg\_obj={res['trace_y_mean'][-1]} avg\_obj\_rand={res['trace_y_mean_rand'][-1]}"
         elif args.plot_y == 'rank':
             y_key = 'trace_rank'
             opt_val = 1
             y_label = r'Rank ($\downarrow$)'
-            title_result = f"avg_rank={res['avg_rank']}, avg_rank_rand={res['avg_rank_rand']}"
-        title_experiment = f"word={results['target']}, model={results['model']}, feat={results['feat_extraction_strategy']}, \nprompt={results['prompt_strategy']}{(', hint=' + results['hint']) if results['prompt_strategy'].startswith('hint') else ''}, \nn_init_data={results['n_init_data']}, n_seeds={results['n_seeds']}"
+            title_result = f"avg\_rank={res['avg_rank']}, avg\_rank\_rand={res['avg_rank_rand']}"
+        title_experiment = f"word={results['target']}, model={results['model']}, feat={results['feat_extraction_strategy']}, prompt={results['prompt_strategy']}{(', hint=' + results['hint']) if results['prompt_strategy'].startswith('hint') else ''}, n_init_data={results['n_init_data']}, n_seeds={results['n_seeds']}"
         t = np.arange(len(res[f'{y_key}_mean']))
         plt.axhline(opt_val, color='black', linestyle='dashed', label="Optimal")
         plt.plot(t, res[f'{y_key}_mean'], label="BO")
@@ -459,8 +459,8 @@ def plot(results, aggregate=False):
         plt.legend()
         plt.xlabel(r'$t$')
         plt.ylabel(y_label)
-        plt.title(f'{title_experiment}\n{title_result}')
-        plt.savefig(os.path.join(out_dir, f'aggregate.png'))
+        plt.title(f'{title_experiment}\n' + fr'$\bf{{{title_result}}}$', wrap=True)
+        plt.savefig(os.path.join(out_dir, f'aggregate.png'), bbox_inches="tight")
         print(f'Saved final plot at ' + os.path.join(out_dir, f'aggregate.png'))
 
 
