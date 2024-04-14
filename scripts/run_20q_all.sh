@@ -5,7 +5,7 @@ desc="20q"
 partition="gpu"
 n_gpus="1080ti:1"
 mem="100G"
-time="0-2:00:00"
+time="0-6:00:00"
 
 # Script defaults
 MODELS="t5-small t5-base t5-large llama-2-7b llama-2-13b"  # llama-2-70b
