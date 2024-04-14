@@ -29,6 +29,9 @@ class Parser(argparse.ArgumentParser):
     def __init__(self):
         super().__init__()
         self.add_argument(
+            "--run_id", type=str
+        )
+        self.add_argument(
             "--data_dir", type=str, default='data/twentyquestions/datasets/word2vec'
         )
         self.add_argument(
@@ -467,7 +470,7 @@ if __name__ == '__main__':
     print("Script arguments:")
     print(args.__dict__)
     global RUN_ID
-    RUN_ID = str(int(time.time()))
+    RUN_ID = str(int(time.time())) if args.run_id is None else args.run_id
     global out_dir
     out_dir = os.path.join(args.out_dir, RUN_ID)
 

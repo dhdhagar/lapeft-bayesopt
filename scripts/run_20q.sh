@@ -75,11 +75,15 @@ else
 fi
 OUT_DIR="outputs/${desc}/${EXPERIMENT}"
 
+# Set RUN_ID to the current timestamp
+RUN_ID="$(date +%s)"
+
 # Submit job
-JOB_DESC=${desc}_${EXPERIMENT} && JOB_NAME=${JOB_DESC}_$(date +%s) && \
+JOB_DESC=${desc}_${EXPERIMENT} && JOB_NAME=${JOB_DESC}_${RUN_ID} && \
   sbatch -J ${JOB_NAME} -e ${job_dir}/${JOB_NAME}.err -o ${job_dir}/${JOB_NAME}.log \
     --partition=${partition} --gres=gpu:${n_gpus} --mem=${mem} --time=${time} scripts/run_sbatch.sh \
       examples/run_fixed_features_20q.py \
+      --run_id="${RUN_ID}" \
       --dataset="${TEST_WORD}" \
       --n_init_data=${N_INIT_DATA} \
       --n_seeds=${N_SEEDS} \
@@ -90,5 +94,5 @@ JOB_DESC=${desc}_${EXPERIMENT} && JOB_NAME=${JOB_DESC}_$(date +%s) && \
       --T=${STEPS} \
       --out_dir="${OUT_DIR}"
 echo "Log path: ${job_dir}/${JOB_NAME}.log"
-echo "Output path: ${OUT_DIR}
+echo "Output path: ${OUT_DIR}/${RUN_ID}
 "
