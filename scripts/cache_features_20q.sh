@@ -8,7 +8,7 @@ PROMPTS="word instruction hint hint-goodness"
 # Define the feature aggregation strategies
 FEATS="average last-token"
 # Get the word from the first argument
-WORD="computer"
+TEST_WORDS="computer"
 # Define the hint
 HINT="Hint: the hidden word is an example of a machine."  # Support for only one hint currently
 
