@@ -421,7 +421,7 @@ def plot(results, aggregate=False):
             y_key = 'trace_rank'
             opt_val = 1
             y_label = r'Rank ($\downarrow$)'
-        title_experiment = f"word={results['target']}, model={results['model']}, feat={results['feat_extraction_strategy']}, \nprompt={results['prompt_strategy']}{(', hint=' + results['hint']) if results['prompt_strategy'].startswith('hint') else ''}, \nn_init_data={res['n_init_data']}, seed={results['seed']}"
+        title_experiment = f"word={results['target']}, model={results['model']}, feat={results['feat_extraction_strategy']}, \nprompt={results['prompt_strategy']}{(', hint=' + results['hint']) if results['prompt_strategy'].startswith('hint') else ''}, \nn_init_data={results['n_init_data']}, seed={results['seed']}"
         title_result = f"best_x={res['trace_x'][-1]}, best_rank={res['best_rank']}, best_obj={round(res['trace_y'][-1], 4)}, steps={res['steps_to_opt']}"
         t = np.arange(len(res[y_key]))
         plt.axhline(opt_val, color='black', linestyle='dashed', label="Optimal")
@@ -445,7 +445,7 @@ def plot(results, aggregate=False):
             opt_val = 1
             y_label = r'Rank ($\downarrow$)'
             title_result = f"avg_rank={res['avg_rank']}, avg_rank_rand={res['avg_rank_rand']}"
-        title_experiment = f"word={results['target']}, model={results['model']}, feat={results['feat_extraction_strategy']}, \nprompt={results['prompt_strategy']}{(', hint=' + results['hint']) if results['prompt_strategy'].startswith('hint') else ''}, \nn_init_data={res['n_init_data']}, n_seeds={results['n_seeds']}"
+        title_experiment = f"word={results['target']}, model={results['model']}, feat={results['feat_extraction_strategy']}, \nprompt={results['prompt_strategy']}{(', hint=' + results['hint']) if results['prompt_strategy'].startswith('hint') else ''}, \nn_init_data={results['n_init_data']}, n_seeds={results['n_seeds']}"
         t = np.arange(len(res[f'{y_key}_mean']))
         plt.axhline(opt_val, color='black', linestyle='dashed', label="Optimal")
         plt.plot(t, res[f'{y_key}_mean'], label="BO")
