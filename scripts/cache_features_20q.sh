@@ -1,15 +1,16 @@
 #!/bin/bash
 # This script is used to generate and cache features per model for a given word accepted as input
 
-# Get the word from the first argument
-WORD="computer"
 # Define the set of models
-MODELS="t5-small t5-base t5-large llama-2-7b llama-2-13b llama-2-70b"
+MODELS="t5-small t5-base t5-large llama-2-7b llama-2-13b"  # llama-2-70b
 # Define the prompting strategies
-PROMPTS="word instruction"  # "hint hint-goodness"
-HINT=""  # Support for only one hint currently
+PROMPTS="word instruction hint hint-goodness"
 # Define the feature aggregation strategies
 FEATS="average last-token"
+# Get the word from the first argument
+WORD="computer"
+# Define the hint
+HINT="Hint: the hidden word is an example of a machine."  # Support for only one hint currently
 
 # Parse arguments
 while [[ $# -gt 0 ]]; do

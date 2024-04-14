@@ -10,12 +10,12 @@ time="0-2:00:00"
 # Script defaults
 MODELS="t5-small t5-base t5-large llama-2-7b llama-2-13b"  # llama-2-70b
 PROMPTS="word instruction hint hint-goodness"
-HINT="Hint: the hidden word is an example of a machine."  # Support for only one hint currently
 FEATS="average last-token"
-TEST_WORDS="computer"
 N_INIT_DATAS="5"  # "1 5 10"
 N_SEEDS=5
 STEPS="100"  # "50 100"
+TEST_WORDS="computer"
+HINT="Hint: the hidden word is an example of a machine."  # Support for only one hint currently
 
 # Parse arguments
 while [[ $# -gt 0 ]]; do
