@@ -92,6 +92,9 @@ class Parser(argparse.ArgumentParser):
             "--n_seeds", type=int, default=1
         )
         self.add_argument(
+            "--plot_y", type=str, choices=['obj', 'rank'], default='rank'
+        )
+        self.add_argument(
             "--debug", action=argparse.BooleanOptionalAction, default=False
         )
 
@@ -268,12 +271,14 @@ def run_bayesopt(words, features, targets, test_word, n_init_data=10, T=None, se
     best_x_label = init_x_labels[best_idx]
     best_rank = word2rank[best_x_label]
     trace_best_y = [best_y]
+    trace_best_rank = [best_rank]
     trace_best_x_label = [best_x_label]
     steps_to_opt = -1
 
     # Also track a random sampling baseline
     best_rank_rand = word2rank[best_x_label]
     trace_best_y_rand = [best_y]
+    trace_best_rank_rand = [best_rank_rand]
     trace_best_x_label_rand = [best_x_label]
     steps_to_opt_rand = -1
 
@@ -323,6 +328,7 @@ def run_bayesopt(words, features, targets, test_word, n_init_data=10, T=None, se
                     steps_to_opt = t + 1
                     bo_found = True
             trace_best_y.append(best_y)
+            trace_best_rank.append(best_rank)
             trace_best_x_label.append(best_x_label)
 
             # Update surrogate posterior with the newly acquired (x, y)
@@ -334,6 +340,7 @@ def run_bayesopt(words, features, targets, test_word, n_init_data=10, T=None, se
             )
         else:
             trace_best_y.append(trace_best_y[-1])
+            trace_best_rank.append(trace_best_rank[-1])
             trace_best_x_label.append(trace_best_x_label[-1])
             pbar.set_description(
                 f'[Best f(x="{best_x_label}") = {best_y:.3f} (rank={word2rank[best_x_label]})]'
@@ -346,17 +353,20 @@ def run_bayesopt(words, features, targets, test_word, n_init_data=10, T=None, se
             seen_idxs_rand.add(idx_rand)
             new_x_rand, new_y_rand = features[idx_rand], targets[idx_rand]
             if new_y_rand.item() > trace_best_y_rand[-1]:
+                best_rank_rand = word2rank[words[idx_rand]]
                 trace_best_y_rand.append(new_y_rand.item())
                 trace_best_x_label_rand.append(words[idx_rand])
-                best_rank_rand = word2rank[words[idx_rand]]
+                trace_best_rank_rand.append(best_rank_rand)
                 if trace_best_y_rand[-1] == ground_truth_max:
                     steps_to_opt_rand = t + 1
                     rand_found = True
             else:
                 trace_best_y_rand.append(trace_best_y_rand[-1])
+                trace_best_rank_rand.append(trace_best_rank_rand[-1])
                 trace_best_x_label_rand.append(trace_best_x_label_rand[-1])
         else:
             trace_best_y_rand.append(trace_best_y_rand[-1])
+            trace_best_rank_rand.append(trace_best_rank_rand[-1])
             trace_best_x_label_rand.append(trace_best_x_label_rand[-1])
 
     if best_y == ground_truth_max:
@@ -385,8 +395,10 @@ def run_bayesopt(words, features, targets, test_word, n_init_data=10, T=None, se
             "best_rank_rand": best_rank_rand,
             "steps_to_opt_rand": steps_to_opt_rand,
             "trace_y": trace_best_y,
+            "trace_rank": trace_best_rank,
             "trace_x": trace_best_x_label,
             "trace_y_rand": trace_best_y_rand,
+            "trace_rank_rand": trace_best_rank_rand,
             "trace_x_rand": trace_best_x_label_rand,
         }
     }
@@ -396,40 +408,53 @@ def plot(results, aggregate=False):
     plt.clf()
     if not aggregate:
         res = results['results']
-        t = np.arange(len(res['trace_y']))
-        plt.axhline(results['opt_val'], color='black', linestyle='dashed')
-        plt.plot(t, res['trace_y'])
-        plt.plot(t, res['trace_y_rand'])
-        plt.legend(["Optimal", "BO", "Random"])
+        if args.plot_y == 'obj':
+            y_key = 'trace_y'
+            opt_val = results['opt_val']
+            y_label = 'Objective ($\uparrow$)'
+        elif args.plot_y == 'rank':
+            y_key = 'trace_rank'
+            opt_val = 1
+            y_label = 'Rank ($\downarrow$)'
+        t = np.arange(len(res[y_key]))
+        plt.axhline(opt_val, color='black', linestyle='dashed', label="Optimal")
+        plt.plot(t, res[y_key], label="BO")
+        plt.plot(t, res[f'{y_key}_rand'], label="Random")
+        plt.legend()
         plt.xlabel(r'$t$')
-        plt.ylabel(r'Objective ($\uparrow$)')
+        plt.ylabel(fr'{y_label}')
         plt.title(
-            f"best_rank={res['best_rank']}, best_x={res['trace_x'][-1]}, best_y={round(res['trace_y'][-1], 4)}, steps={res['steps_to_opt']}")
-        plt.savefig(
-            os.path.join(out_dir, f'{results["target"]}_T-{args.T}_init-{args.n_init_data}_seed-{results["seed"]}.png'))
-        print(f'Saved plot at ' +
-              os.path.join(out_dir,
-                           f'{results["target"]}_T-{args.T}_init-{args.n_init_data}_seed-{results["seed"]}.png'))
+            f"best_x={res['trace_x'][-1]}, best_rank={res['best_rank']}, best_obj={round(res['trace_y'][-1], 4)}, steps={res['steps_to_opt']}")
+        plt.savefig(os.path.join(out_dir, f'seed-{results["seed"]}.png'))
+        print(f'Saved plot at ' + os.path.join(out_dir, f'seed-{results["seed"]}.png'))
     else:
         res = results['results']
-        t = np.arange(len(res['trace_y_mean']))
-        plt.axhline(results['opt_val'], color='black', linestyle='dashed', label="Optimal")
-        plt.plot(t, res['trace_y_mean'], label="BO")
-        plt.fill_between(t, np.array(res['trace_y_mean']) - np.array(res['trace_y_std']),
-                         np.array(res['trace_y_mean']) + np.array(res['trace_y_std']),
+        if args.plot_y == 'obj':
+            y_key = 'trace_y'
+            opt_val = results['opt_val']
+            y_label = 'Objective ($\uparrow$)'
+            title = f"avg_obj={res['trace_y_mean'][-1]} avg_obj_rand={res['trace_y_mean_rand'][-1]}"
+        elif args.plot_y == 'rank':
+            y_key = 'trace_rank'
+            opt_val = 1
+            y_label = 'Rank ($\downarrow$)'
+            title = f"avg_rank={res['avg_rank']}, avg_rank_rand={res['avg_rank_rand']}"
+        t = np.arange(len(res[f'{y_key}_mean']))
+        plt.axhline(opt_val, color='black', linestyle='dashed', label="Optimal")
+        plt.plot(t, res[f'{y_key}_mean'], label="BO")
+        plt.fill_between(t, np.array(res[f'{y_key}_mean']) - np.array(res[f'{y_key}_std']),
+                         np.array(res[f'{y_key}_mean']) + np.array(res[f'{y_key}_std']),
                          color='blue', alpha=0.2)
-        plt.plot(t, res['trace_y_mean_rand'], label="Random")
-        plt.fill_between(t, np.array(res['trace_y_mean_rand']) - np.array(res['trace_y_std_rand']),
-                         np.array(res['trace_y_mean_rand']) + np.array(res['trace_y_std_rand']),
+        plt.plot(t, res[f'{y_key}_mean_rand'], label="Random")
+        plt.fill_between(t, np.array(res[f'{y_key}_mean_rand']) - np.array(res[f'{y_key}_std_rand']),
+                         np.array(res[f'{y_key}_mean_rand']) + np.array(res[f'{y_key}_std_rand']),
                          color='orange', alpha=0.2)
         plt.legend()
         plt.xlabel(r'$t$')
-        plt.ylabel(r'Objective ($\uparrow$)')
-        plt.title(
-            f"avg_rank={res['avg_rank']}, avg_rank_rand={res['avg_rank_rand']}")
-        plt.savefig(os.path.join(out_dir, f'agg_{results["target"]}_T-{args.T}_init-{args.n_init_data}.png'))
-        print(f'Saved final plot at ' + os.path.join(out_dir,
-                                                     f'agg_{results["target"]}_T-{args.T}_init-{args.n_init_data}.png'))
+        plt.ylabel(fr'{y_label}')
+        plt.title(title)
+        plt.savefig(os.path.join(out_dir, f'aggregate.png'))
+        print(f'Saved final plot at ' + os.path.join(out_dir, f'aggregate.png'))
 
 
 if __name__ == '__main__':
@@ -500,7 +525,9 @@ if __name__ == '__main__':
 
     # Aggregate results
     all_trace_y = np.stack([res["results"]["trace_y"] for res in all_results])
+    all_trace_rank = np.stack([res["results"]["trace_rank"] for res in all_results])
     all_trace_y_rand = np.stack([res["results"]["trace_y_rand"] for res in all_results])
+    all_trace_rank_rand = np.stack([res["results"]["trace_rank_rand"] for res in all_results])
     final_res = {
         "target": all_results[-1]["target"],
         "n_seeds": args.n_seeds,
@@ -525,8 +552,12 @@ if __name__ == '__main__':
                  res["results"]["steps_to_opt_rand"] != -1]),
             "trace_y_mean": list(all_trace_y.mean(axis=0)),
             "trace_y_std": list(all_trace_y.std(axis=0)),
+            "trace_rank_mean": list(all_trace_rank.mean(axis=0)),
+            "trace_rank_std": list(all_trace_rank.std(axis=0)),
             "trace_y_mean_rand": list(all_trace_y_rand.mean(axis=0)),
             "trace_y_std_rand": list(all_trace_y_rand.std(axis=0)),
+            "trace_rank_mean_rand": list(all_trace_rank_rand.mean(axis=0)),
+            "trace_rank_std_rand": list(all_trace_rank_rand.std(axis=0)),
             "per_seed": all_results
         }
     }
