@@ -374,6 +374,8 @@ def run_bayesopt(words, features, targets, test_word, n_init_data=10, T=None, se
     else:
         print(
             f'Hidden word ("{test_word}") not found. Best found: f(x="{best_x_label}") = {round(best_y, 3)} (rank={best_rank}).')
+    print(
+        f'Best found by random search: f(x="{trace_best_x_label_rand[-1]}") = {round(trace_best_y_rand[-1], 3)} (rank={trace_best_rank_rand[-1]}).')
 
     return {
         "target": test_word,
