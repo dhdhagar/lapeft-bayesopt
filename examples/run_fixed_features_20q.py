@@ -502,6 +502,9 @@ if __name__ == '__main__':
         test_word = pd_dataset['Words'][test_idx]
         print(f'\nHIDDEN WORD: "{test_word}"')
         features, targets = load_features(dataset=pd_dataset, test_word=test_word, test_idx=test_idx)
+        # TEMP FIX; TODO: Fix shape of saved features
+        features = features.squeeze()
+        targets = targets.squeeze()
 
 
     if args.exit_after_feat_extraction:
