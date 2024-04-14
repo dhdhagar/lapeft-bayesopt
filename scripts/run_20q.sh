@@ -68,7 +68,7 @@ job_dir="jobs/${desc}"
 mkdir -p ${job_dir}
 
 # Determine output dir for script
-if [[ $PROMPT == "hint" ]]; then
+if [[ $PROMPT == hint* ]]; then
   EXPERIMENT="${TEST_WORD}_${MODEL}_${PROMPT}-$(split_and_join "${HINT}")_${FEAT}_n${N_INIT_DATA}_t${STEPS}"
 else
   EXPERIMENT="${TEST_WORD}_${MODEL}_${PROMPT}_${FEAT}_n${N_INIT_DATA}_t${STEPS}"
