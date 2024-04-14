@@ -430,7 +430,7 @@ def plot(results, aggregate=False):
         plt.legend()
         plt.xlabel(r'$t$')
         plt.ylabel(y_label)
-        plt.title(f'{title_experiment}\n{title_result}', wrap=True)
+        plt.title(f'{title_experiment}\n' + fr'$\bf{{{title_result}}}$', wrap=True)
         plt.savefig(os.path.join(out_dir, f'seed-{results["seed"]}.png'), bbox_inches="tight")
         print(f'Saved plot at ' + os.path.join(out_dir, f'seed-{results["seed"]}.png'))
     else:
