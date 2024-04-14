@@ -411,18 +411,18 @@ def plot(results, aggregate=False):
         if args.plot_y == 'obj':
             y_key = 'trace_y'
             opt_val = results['opt_val']
-            y_label = 'Objective ($\uparrow$)'
+            y_label = r'Objective ($\uparrow$)'
         elif args.plot_y == 'rank':
             y_key = 'trace_rank'
             opt_val = 1
-            y_label = 'Rank ($\downarrow$)'
+            y_label = r'Rank ($\downarrow$)'
         t = np.arange(len(res[y_key]))
         plt.axhline(opt_val, color='black', linestyle='dashed', label="Optimal")
         plt.plot(t, res[y_key], label="BO")
         plt.plot(t, res[f'{y_key}_rand'], label="Random")
         plt.legend()
         plt.xlabel(r'$t$')
-        plt.ylabel(fr'{y_label}')
+        plt.ylabel(y_label)
         plt.title(
             f"best_x={res['trace_x'][-1]}, best_rank={res['best_rank']}, best_obj={round(res['trace_y'][-1], 4)}, steps={res['steps_to_opt']}")
         plt.savefig(os.path.join(out_dir, f'seed-{results["seed"]}.png'))
@@ -432,12 +432,12 @@ def plot(results, aggregate=False):
         if args.plot_y == 'obj':
             y_key = 'trace_y'
             opt_val = results['opt_val']
-            y_label = 'Objective ($\uparrow$)'
+            y_label = r'Objective ($\uparrow$)'
             title = f"avg_obj={res['trace_y_mean'][-1]} avg_obj_rand={res['trace_y_mean_rand'][-1]}"
         elif args.plot_y == 'rank':
             y_key = 'trace_rank'
             opt_val = 1
-            y_label = 'Rank ($\downarrow$)'
+            y_label = r'Rank ($\downarrow$)'
             title = f"avg_rank={res['avg_rank']}, avg_rank_rand={res['avg_rank_rand']}"
         t = np.arange(len(res[f'{y_key}_mean']))
         plt.axhline(opt_val, color='black', linestyle='dashed', label="Optimal")
@@ -451,7 +451,7 @@ def plot(results, aggregate=False):
                          color='orange', alpha=0.2)
         plt.legend()
         plt.xlabel(r'$t$')
-        plt.ylabel(fr'{y_label}')
+        plt.ylabel(y_label)
         plt.title(title)
         plt.savefig(os.path.join(out_dir, f'aggregate.png'))
         print(f'Saved final plot at ' + os.path.join(out_dir, f'aggregate.png'))
