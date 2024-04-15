@@ -4,7 +4,7 @@
 # Define the set of datasets
 DATASETS="word2vec-1000 word2vec-2000 word2vec-3000 word2vec-4000"
 # Define the set of models
-MODELS="t5-small t5-base t5-large llama-2-7b llama-2-13b"  # llama-2-70b
+MODELS="t5-base llama-2-7b"  # t5-small t5-large llama-2-13b llama-2-70b
 # Define the prompting strategies
 PROMPTS="word instruction hint hint-goodness"
 # Define the feature aggregation strategies
