@@ -25,6 +25,7 @@ mem="100G"
 time="0-1:00:00"
 
 # Script defaults
+DATASET="word2vec-1000"  # word2vec-1000 word2vec-2000 word2vec-3000 word2vec-4000
 MODEL="t5-small"
 PROMPT="word"
 HINT=""
@@ -44,6 +45,7 @@ while [[ $# -gt 0 ]]; do
         --mem) mem="$2"; shift ;;
         --time) time="$2"; shift ;;
         # Script arguments
+        --dataset) DATASET="$2"; shift ;;
         --test_word) TEST_WORD="$2"; shift ;;
         --n_init_data) N_INIT_DATA="$2"; shift ;;
         --n_seeds) N_SEEDS="$2"; shift ;;
@@ -73,7 +75,10 @@ if [[ $PROMPT == hint* ]]; then
 else
   EXPERIMENT="${TEST_WORD}_${MODEL}_${PROMPT}_${FEAT}_n${N_INIT_DATA}_t${STEPS}"
 fi
-OUT_DIR="outputs/${desc}/${EXPERIMENT}"
+OUT_DIR="outputs/${desc}/${DATASET}/${EXPERIMENT}"
+
+# Determine data_dir
+DATA_DIR="data/twentyquestions/datasets/${DATASET}"
 
 # Set RUN_ID to the current timestamp
 RUN_ID="$(date +%s)"
@@ -84,6 +89,7 @@ JOB_DESC=${desc}_${EXPERIMENT} && JOB_NAME=${JOB_DESC}_${RUN_ID} && \
     --partition=${partition} --gres=gpu:${n_gpus} --mem=${mem} --time=${time} scripts/run_sbatch.sh \
       examples/run_fixed_features_20q.py \
       --run_id="${RUN_ID}" \
+      --data_dir="${DATA_DIR}" \
       --dataset="${TEST_WORD}" \
       --n_init_data=${N_INIT_DATA} \
       --n_seeds=${N_SEEDS} \

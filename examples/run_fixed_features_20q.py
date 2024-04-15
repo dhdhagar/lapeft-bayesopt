@@ -32,7 +32,7 @@ class Parser(argparse.ArgumentParser):
             "--run_id", type=str
         )
         self.add_argument(
-            "--data_dir", type=str, default='data/twentyquestions/datasets/word2vec'
+            "--data_dir", type=str, default='data/twentyquestions/datasets/word2vec-1000'
         )
         self.add_argument(
             "--cache_dir", type=str, default='cache'
@@ -505,7 +505,7 @@ if __name__ == '__main__':
             print(f'Saved word-specific dataset to ' + os.path.join(dataset_dir,
                                                                     f'{test_word}_{args.prompt_strategy}{"-" + "-".join(args.hint.split()) if args.prompt_strategy.startswith("hint") else ""}_{args.feat_extraction_strategy}_{args.model}.csv'))
     else:
-        test_idx = 0
+        test_idx = 0  # assuming dataset is sorted by decreasing similarity
         test_word = pd_dataset['Words'][test_idx]
         print(f'\nHIDDEN WORD: "{test_word}"')
         features, targets = load_features(dataset=pd_dataset, test_word=test_word, test_idx=test_idx)

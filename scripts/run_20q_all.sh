@@ -8,7 +8,8 @@ mem="100G"
 time="0-6:00:00"
 
 # Script defaults
-MODELS="t5-small t5-base t5-large llama-2-7b llama-2-13b"  # llama-2-70b
+DATASETS="word2vec-1000"  # word2vec-1000 word2vec-2000 word2vec-3000 word2vec-4000
+MODELS="t5-base llama-2-7b"  # t5-small t5-base t5-large llama-2-7b llama-2-13b llama-2-70b
 PROMPTS="word instruction hint hint-goodness"
 FEATS="average last-token"
 N_INIT_DATAS="5"  # "1 5 10"
@@ -26,6 +27,7 @@ while [[ $# -gt 0 ]]; do
         --mem) mem="$2"; shift ;;
         --time) time="$2"; shift ;;
         # Script arguments
+        --datasets) DATASETS="$2"; shift ;;
         --test_words) TEST_WORDS="$2"; shift ;;
         --n_init_datas) N_INIT_DATAS="$2"; shift ;;
         --n_seeds) N_SEEDS="$2"; shift ;;
@@ -39,32 +41,35 @@ while [[ $# -gt 0 ]]; do
     shift
 done
 
-for TEST_WORD in $TEST_WORDS; do
-    for MODEL in $MODELS; do
-        for PROMPT in $PROMPTS; do
-            for FEAT in $FEATS; do
-                # Don't run if aggregation is first-token for llama models
-                if [[ $MODEL == llama* ]]; then
-                    if [[ $FEAT == "first-token" ]]; then
-                        echo "Skipping first-token feature extraction for llama models."
-                        continue
+for DATASET in $DATASETS; do
+    for TEST_WORD in $TEST_WORDS; do
+        for MODEL in $MODELS; do
+            for PROMPT in $PROMPTS; do
+                for FEAT in $FEATS; do
+                    # Don't run if aggregation is first-token for llama models
+                    if [[ $MODEL == llama* ]]; then
+                        if [[ $FEAT == "first-token" ]]; then
+                            echo "Skipping first-token feature extraction for llama models."
+                            continue
+                        fi
                     fi
-                fi
-                for N_INIT_DATA in $N_INIT_DATAS; do
-                    for STEP in $STEPS; do
-                        ./scripts/run_20q.sh \
-                            --test_word $TEST_WORD \
-                            --n_init_data $N_INIT_DATA \
-                            --n_seeds $N_SEEDS \
-                            --model $MODEL \
-                            --prompt $PROMPT \
-                            --hint "$HINT" \
-                            --feat $FEAT \
-                            --steps $STEP \
-                            --partition $partition \
-                            --n_gpus $n_gpus \
-                            --mem $mem \
-                            --time $time
+                    for N_INIT_DATA in $N_INIT_DATAS; do
+                        for STEP in $STEPS; do
+                            ./scripts/run_20q.sh \
+                                --dataset $DATASET \
+                                --test_word $TEST_WORD \
+                                --n_init_data $N_INIT_DATA \
+                                --n_seeds $N_SEEDS \
+                                --model $MODEL \
+                                --prompt $PROMPT \
+                                --hint "$HINT" \
+                                --feat $FEAT \
+                                --steps $STEP \
+                                --partition $partition \
+                                --n_gpus $n_gpus \
+                                --mem $mem \
+                                --time $time
+                        done
                     done
                 done
             done
