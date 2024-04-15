@@ -42,7 +42,7 @@ for DATASET in $DATASETS; do
                 for FEAT in $FEATS; do
                     echo "
 -----------------------------------
-Generating features for word: '$WORD', model: '$MODEL', prompt: '$PROMPT', hint: '$HINT', features: '$FEAT'
+Generating features --> dataset: '$DATASET', word: '$WORD', model: '$MODEL', prompt: '$PROMPT', hint: '$HINT', features: '$FEAT'
 -----------------------------------
 "
                     # Generate the features
