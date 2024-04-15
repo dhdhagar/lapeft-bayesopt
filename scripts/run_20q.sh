@@ -63,7 +63,7 @@ done
 echo "
 Job arguments: desc=${desc}, partition=${partition}, n_gpus=${n_gpus}, mem=${mem}, time=${time}"
 # Echo all script arguments in one line
-echo "Script arguments: test_word=${TEST_WORD}, n_init_data=${N_INIT_DATA}, n_seeds=${N_SEEDS}, model=${MODEL}, prompt=${PROMPT}, hint="${HINT}", feat=${FEAT}, steps=${STEPS}"
+echo "Script arguments: dataset=${DATASET}, test_word=${TEST_WORD}, n_init_data=${N_INIT_DATA}, n_seeds=${N_SEEDS}, model=${MODEL}, prompt=${PROMPT}, hint="${HINT}", feat=${FEAT}, steps=${STEPS}"
 
 # Create log directory for the job
 job_dir="jobs/${desc}"
