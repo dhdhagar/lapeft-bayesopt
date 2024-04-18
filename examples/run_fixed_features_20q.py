@@ -77,6 +77,9 @@ class Parser(argparse.ArgumentParser):
             default="last-token"
         )
         self.add_argument(
+            "--additive_features", action=argparse.BooleanOptionalAction, default=False
+        )
+        self.add_argument(
             "--exit_after_feat_extraction", action=argparse.BooleanOptionalAction, default=False
         )
         self.add_argument(
@@ -172,7 +175,7 @@ def load_features(dataset, test_word, test_idx):
         # Build the textual representation based on the prompt strategy
         prompt_builder = MyPromptBuilder(kind=args.prompt_strategy, hint=args.hint)
         data_processor = TwentyQuestionsDataProcessor(prompt_builder, tokenizer)
-        dataloader = data_processor.get_dataloader(dataset, shuffle=False)
+        dataloader = data_processor.get_dataloader(dataset, shuffle=False, additive=args.additive_features)
 
         # Forward pass through the LLM, take the aggregate (over sequence dimension)
         # of the last transformer embeddings/features

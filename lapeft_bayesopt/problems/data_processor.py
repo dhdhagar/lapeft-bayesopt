@@ -30,21 +30,15 @@ class DataProcessor:
     def get_dataloader(
         self, pandas_dataset: pd.DataFrame,
         batch_size=16, max_seq_len=512, shuffle=False,
-        append_eos=True, token_id_only=False
+        append_eos=True, additive=False
     ) -> data_utils.DataLoader:
         dataset = Dataset.from_pandas(pandas_dataset)
 
         def tokenize(row):
-            prompt = self.prompt_builder.get_prompt(row[self.x_col], self.obj_str)
-            if not token_id_only:
-                if append_eos:
-                    prompt += self.tokenizer.eos_token
-                out = self.tokenizer(prompt, truncation=True, max_length=max_seq_len)
-            else:
-                # Added for twenty-questions experiments
-                enc = self.tokenizer.encode(prompt, add_special_tokens=False)
-                assert len(enc) == 1
-                out = {'input_ids': enc[0]}
+            prompts = self.prompt_builder.get_prompt(row[self.x_col], self.obj_str, additive=additive)
+            if append_eos:
+                prompts = [prompt + self.tokenizer.eos_token for prompt in prompts]
+            out = self.tokenizer(prompts, truncation=True, max_length=max_seq_len)
             labels = self._get_targets(row)
             if labels is not None:
                 out['labels'] = labels

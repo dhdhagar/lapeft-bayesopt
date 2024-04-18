@@ -24,15 +24,10 @@ class Llama2Regressor(BaseLLMRegressor):
         self.config = config
         self.feature_extractor = feature_extractor
 
-    def forward_features(self, data, embeddings=False):
-        if not embeddings:
-            device = next(self.parameters()).device
-            input_ids = data['input_ids'].to(device, non_blocking=True)
-            # Adding missing attention mask
-            attention_mask = data['attention_mask'].to(device, non_blocking=True)
-            feat = self.feature_extractor(input_ids, attention_mask=attention_mask).last_hidden_state
-            return feat
-        else:
-            # Added for initial twenty-questions experiments
-            token_id = data['input_ids']
-            return self.feature_extractor.get_input_embeddings().weight.detach()[token_id]
+    def forward_features(self, data):
+        device = next(self.parameters()).device
+        input_ids = data['input_ids'].to(device, non_blocking=True)
+        # Adding missing attention mask
+        attention_mask = data['attention_mask'].to(device, non_blocking=True)
+        feat = self.feature_extractor(input_ids, attention_mask=attention_mask).last_hidden_state
+        return feat
