@@ -24,7 +24,7 @@ class MyPromptBuilder(PromptBuilder):
             if not additive:
                 return [f'{instruction} {next_word}']
             else:
-                return [instruction, _next_word]
+                return [instruction, next_word]
         elif self.kind == 'hint':
             # TwentyQuestions
             if not additive:
