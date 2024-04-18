@@ -182,7 +182,11 @@ def load_features(dataset, test_word, test_idx):
         features, targets = [], []
         for data in tqdm.tqdm(dataloader):
             with torch.no_grad():
+                data['input_ids'] = data['input_ids'].squeeze()
+                data['attention_mask'] = data['attention_mask'].squeeze()
                 feat = llm_feat_extractor.forward_features(data)
+                if args.additive_features:
+                    feat = feat.sum(dim=0).unsqueeze(dim=0)
                 if args.feat_extraction_strategy == 'average':
                     feat = get_avg_features(feat, data)
                 elif args.feat_extraction_strategy == 'max':

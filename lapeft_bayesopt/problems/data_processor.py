@@ -38,7 +38,7 @@ class DataProcessor:
             prompts = self.prompt_builder.get_prompt(row[self.x_col], self.obj_str, additive=additive)
             if append_eos:
                 prompts = [prompt + self.tokenizer.eos_token for prompt in prompts]
-            out = self.tokenizer(prompts, truncation=True, max_length=max_seq_len)
+            out = self.tokenizer(prompts, truncation=True, max_length=max_seq_len, padding=True)
             labels = self._get_targets(row)
             if labels is not None:
                 out['labels'] = labels
@@ -47,7 +47,7 @@ class DataProcessor:
         dataset = dataset.map(tokenize, remove_columns=self._get_columns_to_remove(), num_proc=4)
 
         return data_utils.DataLoader(
-            dataset, batch_size=batch_size, shuffle=shuffle,
+            dataset, batch_size=1 if additive else batch_size, shuffle=shuffle,
             collate_fn=DataCollatorWithPadding(self.tokenizer)
         )
 
