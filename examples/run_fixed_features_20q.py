@@ -158,7 +158,7 @@ def load_features(dataset, test_word, test_idx):
     if not args.reset_cache and os.path.exists(os.path.join(CACHE_FPATH, f'{CACHE_FNAME}_feats.bin')):
         features = torch.load(os.path.join(CACHE_FPATH, f'{CACHE_FNAME}_feats.bin'))
         targets = torch.load(os.path.join(CACHE_FPATH, f'{CACHE_FNAME}_targets.bin'))
-        print('\nLoaded cached features.\n')
+        print('\nLoaded cached features.')
     else:
         # Compute features from the last hidden state
         if args.model.startswith('t5'):
