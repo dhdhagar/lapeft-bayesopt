@@ -8,7 +8,7 @@ mem="100G"
 time="0-6:00:00"
 
 # Script defaults
-DATASETS="word2vec-1000"  # word2vec-1000 word2vec-2000 word2vec-3000 word2vec-4000
+DATASETS="word2vec-2000"  # word2vec-1000 word2vec-2000 word2vec-3000 word2vec-4000
 MODELS="t5-base llama-2-7b"  # t5-small t5-base t5-large llama-2-7b llama-2-13b llama-2-70b
 PROMPTS="word instruction hint hint-goodness"
 FEATS="average last-token"
@@ -72,7 +72,7 @@ for DATASET in $DATASETS; do
                                     --prompt $PROMPT \
                                     --hint "$HINT" \
                                     --feat $FEAT \
-                                    --$FEAT_TYPE \
+                                    --feat_type $FEAT_TYPE \
                                     --steps $STEP \
                                     --partition $partition \
                                     --n_gpus $n_gpus \
