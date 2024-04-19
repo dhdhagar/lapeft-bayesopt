@@ -5,6 +5,7 @@ desc="20q"
 partition="gpu"
 n_gpus="1080ti:1"
 mem="100G"
+n_cpus="4"
 time="0-6:00:00"
 
 # Script defaults
@@ -25,6 +26,7 @@ while [[ $# -gt 0 ]]; do
         # Job arguments
         --partition) partition="$2"; shift ;;
         --n_gpus) n_gpus="$2"; shift ;;
+        --n_cpus) n_cpus="$2"; shift ;;
         --mem) mem="$2"; shift ;;
         --time) time="$2"; shift ;;
         # Script arguments
@@ -76,6 +78,7 @@ for DATASET in $DATASETS; do
                                     --steps $STEP \
                                     --partition $partition \
                                     --n_gpus $n_gpus \
+                                    --n_cpus $n_cpus \
                                     --mem $mem \
                                     --time $time
                             done
