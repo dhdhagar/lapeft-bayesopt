@@ -15,6 +15,8 @@ FEAT_TYPES="no-additive_features additive_features"
 TEST_WORDS="computer"
 # Define the hint
 HINT="Hint: the hidden word is an example of a machine."  # Support for only one hint currently
+# Reset cache
+RESET_CACHE="no"
 
 # Parse arguments
 while [[ $# -gt 0 ]]; do
@@ -27,10 +29,18 @@ while [[ $# -gt 0 ]]; do
         --hint) HINT="$2"; shift ;;
         --feats) FEATS="$2"; shift ;;
         --feat_types) FEAT_TYPES="$2"; shift ;;
+        --reset_cache) RESET_CACHE="$2"; shift ;;
         *) echo "Invalid option: $1" >&2; exit 1 ;;
     esac
     shift
 done
+
+# Reset cache setting
+if [[ $RESET_CACHE == "yes" ]]; then
+    CACHE_SETTING="reset_cache"
+else
+    CACHE_SETTING="no-reset_cache"
+fi
 
 # Iterate over the datasets
 for DATASET in $DATASETS; do
@@ -73,7 +83,7 @@ for DATASET in $DATASETS; do
                           --$FEAT_TYPE \
                           --save_word_specific_dataset \
                           --exit_after_feat_extraction \
-                          --reset_cache \
+                          --$CACHE_SETTING \
                           --$CUDA_SETTING
                     done
                 done
