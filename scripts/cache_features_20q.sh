@@ -55,10 +55,10 @@ for DATASET in $DATASETS; do
                 for FEAT in $FEATS; do
                     for FEAT_TYPE in $FEAT_TYPES; do
                         echo "
-    -----------------------------------
-    Generating features --> dataset: '$DATASET', word: '$WORD', model: '$MODEL', prompt: '$PROMPT', hint: '$HINT', features: '$FEAT', feature-type: '$FEAT_TYPE'
-    -----------------------------------
-    "
+-----------------------------------
+Generating features --> dataset: '$DATASET', word: '$WORD', model: '$MODEL', prompt: '$PROMPT', hint: '$HINT', features: '$FEAT', feature-type: '$FEAT_TYPE'
+-----------------------------------
+"
                         # Generate features
                         if [[ $MODEL == llama* ]]; then
                             # Don't run first-token aggregation for llama models
