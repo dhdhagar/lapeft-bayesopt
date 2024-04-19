@@ -50,7 +50,7 @@ class DataProcessor:
         dataset = dataset.map(tokenize, remove_columns=self._get_columns_to_remove(), num_proc=4)
 
         if additive and type(dataset[0]['input_ids'][0]) is not list:
-            print('Additive features requires multiple sequences per input. Exiting.')
+            print('\nERROR: Additive features requires multiple sequences per input. Exiting.')
             sys.exit(1)
 
         return data_utils.DataLoader(
