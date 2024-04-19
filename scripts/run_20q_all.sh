@@ -56,6 +56,11 @@ for DATASET in $DATASETS; do
                         fi
                     fi
                     for FEAT_TYPE in $FEAT_TYPES; do
+                        # Skip if feat type is additive and prompt is word
+                        if [[ $FEAT_TYPE == "additive_features" && $PROMPT == "word" ]]; then
+                            echo "Skipping additive features with word prompt."
+                            continue
+                        fi
                         for N_INIT_DATA in $N_INIT_DATAS; do
                             for STEP in $STEPS; do
                                 ./scripts/run_20q.sh \
