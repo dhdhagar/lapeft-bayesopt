@@ -38,6 +38,11 @@ class DataProcessor:
             prompts = self.prompt_builder.get_prompt(row[self.x_col], self.obj_str, additive=additive)
             if append_eos:
                 prompts = [prompt + self.tokenizer.eos_token for prompt in prompts]
+            if len(prompts) == 1:
+                if additive:
+                    print('Additive features requires multiple sequences per input. Exiting.')
+                    sys.exit(1)
+                prompts = prompts[0]
             out = self.tokenizer(prompts, truncation=True, max_length=max_seq_len, padding=True)
             labels = self._get_targets(row)
             if labels is not None:
