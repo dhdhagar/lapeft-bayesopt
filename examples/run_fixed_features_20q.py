@@ -404,6 +404,7 @@ def run_bayesopt(words, features, targets, test_word, n_init_data=10, T=None, se
         "prompt_strategy": args.prompt_strategy,
         "hint": args.hint,
         "feat_extraction_strategy": args.feat_extraction_strategy,
+        "additive_features": args.additive_features,
         "model": args.model,
         "results": {
             "best_found": trace_best_x_label[-1],
@@ -436,7 +437,7 @@ def plot(results, aggregate=False):
             y_key = 'trace_rank'
             opt_val = 1
             y_label = r'Rank ($\downarrow$)'
-        title_experiment = f"word={results['target']}, model={results['model']}, feat={results['feat_extraction_strategy']}, prompt={results['prompt_strategy']}{(', hint=' + results['hint']) if results['prompt_strategy'].startswith('hint') else ''}, n_init_data={results['n_init_data']}, seed={results['seed']}"
+        title_experiment = f"word={results['target']}, model={results['model']}, feat={results['feat_extraction_strategy']}, prompt={results['prompt_strategy']}{(', hint=' + results['hint']) if results['prompt_strategy'].startswith('hint') else ''}, additive={results['additive_features']}, n_init_data={results['n_init_data']}, seed={results['seed']}"
         title_result = f"best\_x={res['trace_x'][-1]}, best\_rank={res['best_rank']}, best\_obj={round(res['trace_y'][-1], 4)}, steps={res['steps_to_opt']}"
         t = np.arange(len(res[y_key]))
         plt.axhline(opt_val, color='black', linestyle='dashed', label="Optimal")
@@ -460,7 +461,7 @@ def plot(results, aggregate=False):
             opt_val = 1
             y_label = r'Rank ($\downarrow$)'
             title_result = f"avg\_rank={res['avg_rank']}, avg\_rank\_rand={res['avg_rank_rand']}"
-        title_experiment = f"word={results['target']}, model={results['model']}, feat={results['feat_extraction_strategy']}, prompt={results['prompt_strategy']}{(', hint=' + results['hint']) if results['prompt_strategy'].startswith('hint') else ''}, n_init_data={results['n_init_data']}, n_seeds={results['n_seeds']}"
+        title_experiment = f"word={results['target']}, model={results['model']}, feat={results['feat_extraction_strategy']}, prompt={results['prompt_strategy']}{(', hint=' + results['hint']) if results['prompt_strategy'].startswith('hint') else ''}, additive={results['additive_features']}, n_init_data={results['n_init_data']}, n_seeds={results['n_seeds']}"
         t = np.arange(len(res[f'{y_key}_mean']))
         plt.axhline(opt_val, color='black', linestyle='dashed', label="Optimal")
         plt.plot(t, res[f'{y_key}_mean'], label="BO")
@@ -561,6 +562,7 @@ if __name__ == '__main__':
         "prompt_strategy": args.prompt_strategy,
         "hint": args.hint,
         "feat_extraction_strategy": args.feat_extraction_strategy,
+        "additive_features": args.additive_features,
         "model": args.model,
         "avg_elapsed_time": round(elapsed_time / args.n_seeds, 2),
         "results": {
