@@ -30,6 +30,7 @@ MODEL="t5-small"
 PROMPT="word"
 HINT=""
 FEAT="average"
+FEAT_TYPE="no-additive_features"
 TEST_WORD="computer"
 N_INIT_DATA=5
 N_SEEDS=5
@@ -53,6 +54,7 @@ while [[ $# -gt 0 ]]; do
         --prompt) PROMPT="$2"; shift ;;
         --hint) HINT="$2"; shift ;;
         --feat) FEAT="$2"; shift ;;
+        --feat_type) FEAT_TYPE="$2"; shift ;;
         --steps) STEPS="$2"; shift ;;
         *) echo "Invalid option: $1" >&2; exit 1 ;;
     esac
@@ -63,17 +65,23 @@ done
 echo "
 Job arguments: desc=${desc}, partition=${partition}, n_gpus=${n_gpus}, mem=${mem}, time=${time}"
 # Echo all script arguments in one line
-echo "Script arguments: dataset=${DATASET}, test_word=${TEST_WORD}, n_init_data=${N_INIT_DATA}, n_seeds=${N_SEEDS}, model=${MODEL}, prompt=${PROMPT}, hint="${HINT}", feat=${FEAT}, steps=${STEPS}"
+echo "Script arguments: dataset=${DATASET}, test_word=${TEST_WORD}, n_init_data=${N_INIT_DATA}, n_seeds=${N_SEEDS}, model=${MODEL}, prompt=${PROMPT}, hint="${HINT}", feat=${FEAT}, feat_type=${FEAT_TYPE}, steps=${STEPS}"
 
 # Create log directory for the job
 job_dir="jobs/${desc}"
 mkdir -p ${job_dir}
 
+# If additive, then set label as "additive", else leave it blank
+if [[ $FEAT_TYPE == "additive_features" ]]; then
+  FEAT_LABEL="_additive"
+else
+  FEAT_LABEL=""
+fi
 # Determine output dir for script
 if [[ $PROMPT == hint* ]]; then
-  EXPERIMENT="${TEST_WORD}_${MODEL}_${PROMPT}-$(split_and_join "${HINT}")_${FEAT}_n${N_INIT_DATA}_t${STEPS}"
+  EXPERIMENT="${TEST_WORD}_${MODEL}_${PROMPT}-$(split_and_join "${HINT}")_${FEAT}${FEAT_LABEL}_n${N_INIT_DATA}_t${STEPS}"
 else
-  EXPERIMENT="${TEST_WORD}_${MODEL}_${PROMPT}_${FEAT}_n${N_INIT_DATA}_t${STEPS}"
+  EXPERIMENT="${TEST_WORD}_${MODEL}_${PROMPT}_${FEAT}${FEAT_LABEL}_n${N_INIT_DATA}_t${STEPS}"
 fi
 OUT_DIR="outputs/${desc}/${DATASET}/${EXPERIMENT}"
 
@@ -97,6 +105,7 @@ JOB_DESC=${desc}_${EXPERIMENT} && JOB_NAME=${JOB_DESC}_${RUN_ID} && \
       --prompt_strategy="${PROMPT}" \
       --hint="${HINT}" \
       --feat_extraction_strategy="${FEAT}" \
+      --${FEAT_TYPE} \
       --T=${STEPS} \
       --out_dir="${OUT_DIR}"
 echo "Log path: ${job_dir}/${JOB_NAME}.log"

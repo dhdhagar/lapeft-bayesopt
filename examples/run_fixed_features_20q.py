@@ -145,9 +145,12 @@ def load_features(dataset, test_word, test_idx):
     """
     CACHE_FPATH = os.path.join(args.cache_dir, args.data_dir.split('/')[-1], f'{args.dataset}')
     os.makedirs(CACHE_FPATH, exist_ok=True)
-    CACHE_FNAME = [test_word,
-                   f'{args.prompt_strategy}{"-" + "-".join(args.hint.split()) if args.prompt_strategy.startswith("hint") else ""}',
-                   args.feat_extraction_strategy, args.model]
+    CACHE_FNAME = [
+        test_word,
+        f'{args.prompt_strategy}{"-" + "-".join(args.hint.split()) if args.prompt_strategy.startswith("hint") else ""}',
+        args.feat_extraction_strategy,
+        args.model
+    ]
     if args.additive_features:
         CACHE_FNAME.append('additive')
     CACHE_FNAME = '_'.join(CACHE_FNAME)

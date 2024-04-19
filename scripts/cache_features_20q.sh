@@ -9,6 +9,8 @@ MODELS="t5-base llama-2-7b"  # t5-small t5-large llama-2-13b llama-2-70b
 PROMPTS="word instruction hint hint-goodness"
 # Define the feature aggregation strategies
 FEATS="average last-token"
+# Define the feature types
+FEAT_TYPES="no-additive_features additive_features"
 # Get the word from the first argument
 TEST_WORDS="computer"
 # Define the hint
@@ -24,6 +26,7 @@ while [[ $# -gt 0 ]]; do
         --prompts) PROMPTS="$2"; shift ;;
         --hint) HINT="$2"; shift ;;
         --feats) FEATS="$2"; shift ;;
+        --feat_types) FEAT_TYPES="$2"; shift ;;
         *) echo "Invalid option: $1" >&2; exit 1 ;;
     esac
     shift
@@ -40,20 +43,26 @@ for DATASET in $DATASETS; do
             for PROMPT in $PROMPTS; do
                 # Iterate over the feature aggregation strategies
                 for FEAT in $FEATS; do
-                    echo "
------------------------------------
-Generating features --> dataset: '$DATASET', word: '$WORD', model: '$MODEL', prompt: '$PROMPT', hint: '$HINT', features: '$FEAT'
------------------------------------
-"
-                    # Generate the features
-                    if [[ $MODEL == llama* ]]; then
-                        # Don't run if aggregation is first-token for llama models
-                        if [[ $FEAT == "first-token" ]]; then
-                            echo "Skipping first-token aggregation for llama models."
-                            continue
+                    for FEAT_TYPE in $FEAT_TYPES; do
+                        echo "
+    -----------------------------------
+    Generating features --> dataset: '$DATASET', word: '$WORD', model: '$MODEL', prompt: '$PROMPT', hint: '$HINT', features: '$FEAT', feature-type: '$FEAT_TYPE'
+    -----------------------------------
+    "
+                        # Generate features
+                        if [[ $MODEL == llama* ]]; then
+                            # Don't run first-token aggregation for llama models
+                            if [[ $FEAT == "first-token" ]]; then
+                                echo "Skipping first-token aggregation for llama models."
+                                continue
+                            fi
+                            # Disable cuda if model is llama (to prevent OOM on blake)
+                            CUDA_SETTING="no-cuda"
+                        else
+                            # Enable cuda if model is t5
+                            CUDA_SETTING="cuda"
                         fi
-
-                        # Run without cuda if model is llama (doing this to prevent OOM on blake)
+                        # Run extraction
                         python examples/run_fixed_features_20q.py \
                           --data_dir $DATA_DIR \
                           --dataset $WORD \
@@ -61,23 +70,12 @@ Generating features --> dataset: '$DATASET', word: '$WORD', model: '$MODEL', pro
                           --prompt_strategy $PROMPT \
                           --hint "$HINT" \
                           --feat_extraction_strategy $FEAT \
+                          --$FEAT_TYPE \
                           --save_word_specific_dataset \
                           --exit_after_feat_extraction \
                           --reset_cache \
-                          --no-cuda
-                    else
-                        # Run with cuda if model is t5
-                        python examples/run_fixed_features_20q.py \
-                          --data_dir $DATA_DIR \
-                          --dataset $WORD \
-                          --model $MODEL \
-                          --prompt_strategy $PROMPT \
-                          --hint "$HINT" \
-                          --feat_extraction_strategy $FEAT \
-                          --save_word_specific_dataset \
-                          --exit_after_feat_extraction \
-                          --reset_cache
-                    fi
+                          --$CUDA_SETTING
+                    done
                 done
             done
         done
