@@ -40,9 +40,6 @@ class DataProcessor:
             if append_eos:
                 prompts = [prompt + self.tokenizer.eos_token for prompt in prompts]
             if len(prompts) == 1:
-                if additive:
-                    print('Additive features requires multiple sequences per input. Exiting.')
-                    sys.exit(1)
                 prompts = prompts[0]
             out = self.tokenizer(prompts, truncation=True, max_length=max_seq_len, padding=True)
             labels = self._get_targets(row)
@@ -51,6 +48,10 @@ class DataProcessor:
             return out
 
         dataset = dataset.map(tokenize, remove_columns=self._get_columns_to_remove(), num_proc=4)
+
+        if additive and len(dataset[0]['input_ids']) == 1:
+            print('Additive features requires multiple sequences per input. Exiting.')
+            sys.exit(1)
 
         return data_utils.DataLoader(
             dataset, batch_size=1 if additive else batch_size, shuffle=shuffle,
