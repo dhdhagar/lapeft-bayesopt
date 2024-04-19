@@ -49,7 +49,7 @@ class DataProcessor:
 
         dataset = dataset.map(tokenize, remove_columns=self._get_columns_to_remove(), num_proc=4)
 
-        if additive and len(dataset[0]['input_ids']) == 1:
+        if additive and (len(dataset[0]['input_ids']) == 1 and type(dataset[0]['input_ids'][0]) is list):
             print('Additive features requires multiple sequences per input. Exiting.')
             sys.exit(1)
 
