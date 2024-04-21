@@ -27,7 +27,7 @@ from prompting import MyPromptBuilder
 from botorch.models.gp_regression import SingleTaskGP
 from botorch.models.transforms.outcome import Standardize
 from gpytorch.mlls.exact_marginal_log_likelihood import ExactMarginalLogLikelihood
-from botorch.acquisition.analytic import LogExpectedImprovement as LogEI
+from botorch.acquisition.analytic import LogExpectedImprovement
 from botorch import fit_gpytorch_mll
 
 
@@ -359,7 +359,7 @@ def run_bayesopt(words, features, targets, test_word, n_init_data=10, T=None, se
                     acq_vals.append(acq_fn(f_mean, f_var))
                 else:
                     acq_fn = {
-                        "logEI": logEI(model=surrogate, best_f=best_y),
+                        "logEI": LogExpectedImprovement(model=surrogate, best_f=best_y),
                     }[args.acquisition_fn]
                     acq_vals.append(acq_fn(x))
 
