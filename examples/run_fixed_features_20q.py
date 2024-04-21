@@ -537,6 +537,7 @@ if __name__ == '__main__':
     RUN_ID = str(int(time.time())) if args.run_id is None else args.run_id
     global out_dir
     out_dir = os.path.join(args.out_dir, RUN_ID)
+    print(f'Output directory: {out_dir}')
 
     # Load dataset and select the test word
     pd_dataset = pd.read_csv(os.path.join(args.data_dir, f'{args.dataset}.csv'))
