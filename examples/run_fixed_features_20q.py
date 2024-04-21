@@ -69,7 +69,7 @@ class Parser(argparse.ArgumentParser):
             "--surrogate_fn", type=str, choices=['laplace', 'gp'], default="laplace"
         )
         self.add_argument(
-            "--acquisition_fn", type=str, choices=['thompson_sampling', 'LogEI'], default="thompson_sampling"
+            "--acquisition_fn", type=str, choices=['thompson_sampling', 'logEI'], default="thompson_sampling"
         )
         self.add_argument(
             "--cuda", action=argparse.BooleanOptionalAction, default=True
