@@ -392,7 +392,7 @@ def run_bayesopt(words, features, targets, test_word, n_init_data=10, T=None, se
                     posterior = surrogate.posterior(x)
                     f_vals += torch.cat((y.unsqueeze(-1), posterior.mean, posterior.variance.sqrt()), dim=-1).tolist()
                 posterior_vals[t] = f_vals
-                with open(os.path.join(out_dir, f'posterior_vals.json'), 'w') as fh:
+                with open(os.path.join(out_dir, f'posterior_vals_seed{seed}.json'), 'w') as fh:
                     fh.write(json.dumps(posterior_vals, indent=2))
 
             # Update surrogate posterior with the newly acquired (x, y)
