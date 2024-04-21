@@ -344,24 +344,25 @@ def run_bayesopt(words, features, targets, test_word, n_init_data=10, T=None, se
             # Make surrogate predictions over all candidates,
             # then use the predictive mean and variance to compute the acquisition function values
             acq_vals = []
-            for x, y in dataloader:
-                if args.surrogate_fn == "laplace":
-                    # Obtain the posterior predictive distribution p(g_t(x) | D_t)
-                    posterior = surrogate.posterior(x)
-                    f_mean, f_var = posterior.mean, posterior.variance
-                    # For multiobjective problems take the covariance matrix
-                    # i.e., f_cov = posterior.covariance_matrix
+            with torch.no_grad():
+                for x, y in dataloader:
+                    if args.surrogate_fn == "laplace":
+                        # Obtain the posterior predictive distribution p(g_t(x) | D_t)
+                        posterior = surrogate.posterior(x)
+                        f_mean, f_var = posterior.mean, posterior.variance
+                        # For multiobjective problems take the covariance matrix
+                        # i.e., f_cov = posterior.covariance_matrix
 
-                    # Compute value of the acquisition function
-                    acq_fn = {
-                        "thompson_sampling": thompson_sampling,
-                    }[args.acquisition_fn]
-                    acq_vals.append(acq_fn(f_mean, f_var))
-                else:
-                    acq_fn = {
-                        "logEI": LogExpectedImprovement(model=surrogate, best_f=best_y),
-                    }[args.acquisition_fn]
-                    acq_vals.append(acq_fn(x))
+                        # Compute value of the acquisition function
+                        acq_fn = {
+                            "thompson_sampling": thompson_sampling,
+                        }[args.acquisition_fn]
+                        acq_vals.append(acq_fn(f_mean, f_var))
+                    else:
+                        acq_fn = {
+                            "logEI": LogExpectedImprovement(model=surrogate, best_f=best_y),
+                        }[args.acquisition_fn]
+                        acq_vals.append(acq_fn(x.unsqueeze(1)))
 
             # Pick the candidate that maximizes the acquisition fn and update seen idxs
             acq_vals = torch.cat(acq_vals, dim=0).cpu().squeeze()
