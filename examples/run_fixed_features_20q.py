@@ -28,6 +28,7 @@ from botorch.models.gp_regression import SingleTaskGP
 from botorch.models.transforms.outcome import Standardize
 from gpytorch.mlls.exact_marginal_log_likelihood import ExactMarginalLogLikelihood
 from botorch.acquisition.analytic import LogExpectedImprovement as LogEI
+from botorch import fit_gpytorch_mll
 
 
 class Parser(argparse.ArgumentParser):
@@ -262,6 +263,8 @@ def get_surrogate(train_x, train_y, hidden_dim=50, activation=torch.nn.Tanh, n_o
         )
     elif args.surrogate_fn == "gp":
         # train_Yvar = torch.full_like(train_Y, 1e-6)
+        if train_y.size(-1) != 1:
+            train_y = train_y.unsqueeze(-1)
         model = SingleTaskGP(train_x, train_y,
                              # train_Yvar,
                              outcome_transform=Standardize(m=1))
