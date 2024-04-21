@@ -24,6 +24,11 @@ from lapeft_bayesopt.utils import helpers
 from data_processor import TwentyQuestionsDataProcessor
 from prompting import MyPromptBuilder
 
+from botorch.models.gp_regression import SingleTaskGP
+from botorch.models.transforms.outcome import Standardize
+from gpytorch.mlls.exact_marginal_log_likelihood import ExactMarginalLogLikelihood
+from botorch.acquisition.analytic import LogExpectedImprovement as LogEI
+
 
 class Parser(argparse.ArgumentParser):
     def __init__(self):
@@ -59,6 +64,9 @@ class Parser(argparse.ArgumentParser):
         )
         self.add_argument(
             "--init_strategy", type=str, choices=['random'], default="random"
+        )
+        self.add_argument(
+            "--surrogate_fn", type=str, choices=['laplace', 'gp'], default="laplace"
         )
         self.add_argument(
             "--acquisition_fn", type=str, choices=['thompson_sampling'], default="thompson_sampling"
@@ -248,9 +256,19 @@ def get_surrogate(train_x, train_y, hidden_dim=50, activation=torch.nn.Tanh, n_o
             torch.nn.Linear(hidden_dim, n_objs)
         )
 
-    model = LaplaceBoTorch(
-        get_net, train_x, train_y, noise_var=noise_var, hess_factorization=hess_factorization
-    )
+    if args.surrogate_fn == "laplace":
+        model = LaplaceBoTorch(
+            get_net, train_x, train_y, noise_var=noise_var, hess_factorization=hess_factorization
+        )
+    elif args.surrogate_fn == "gp":
+        # train_Yvar = torch.full_like(train_Y, 1e-6)
+        model = SingleTaskGP(train_x, train_y,
+                             # train_Yvar,
+                             outcome_transform=Standardize(m=1))
+        mll = ExactMarginalLogLikelihood(model.likelihood, model)
+        fit_gpytorch_mll(mll)
+    else:
+        raise NotImplementedError
     return model
 
 
@@ -324,17 +342,23 @@ def run_bayesopt(words, features, targets, test_word, n_init_data=10, T=None, se
             # then use the predictive mean and variance to compute the acquisition function values
             acq_vals = []
             for x, y in dataloader:
-                # Obtain the posterior predictive distribution p(g_t(x) | D_t)
-                posterior = surrogate.posterior(x)
-                f_mean, f_var = posterior.mean, posterior.variance
-                # For multiobjective problems take the covariance matrix
-                # i.e., f_cov = posterior.covariance_matrix
+                if args.surrogate_fn == "laplace":
+                    # Obtain the posterior predictive distribution p(g_t(x) | D_t)
+                    posterior = surrogate.posterior(x)
+                    f_mean, f_var = posterior.mean, posterior.variance
+                    # For multiobjective problems take the covariance matrix
+                    # i.e., f_cov = posterior.covariance_matrix
 
-                # Compute value of the acquisition function
-                acq_fn = {
-                    "thompson_sampling": thompson_sampling
-                }[args.acquisition_fn]
-                acq_vals.append(acq_fn(f_mean, f_var))
+                    # Compute value of the acquisition function
+                    acq_fn = {
+                        "thompson_sampling": thompson_sampling,
+                    }[args.acquisition_fn]
+                    acq_vals.append(acq_fn(f_mean, f_var))
+                else:
+                    acq_fn = {
+                        "logEI": logEI(model=surrogate, best_f=best_y),
+                    }[args.acquisition_fn]
+                    acq_vals.append(acq_fn(x))
 
             # Pick the candidate that maximizes the acquisition fn and update seen idxs
             acq_vals = torch.cat(acq_vals, dim=0).cpu().squeeze()
