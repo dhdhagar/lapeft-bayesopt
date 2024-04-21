@@ -363,7 +363,7 @@ def run_bayesopt(words, features, targets, test_word, n_init_data=10, T=None, se
                 f_vals = []
                 for x, y in dataloader:
                     posterior = surrogate.posterior(x)
-                    f_vals.append((float(y), float(posterior.mean), float(np.sqrt(posterior.variance))))
+                    f_vals += torch.cat((y.unsqueeze(-1), posterior.mean, posterior.variance.sqrt()), dim=-1).tolist()
                 posterior_vals[t] = f_vals
                 with open(os.path.join(out_dir, f'posterior_vals.json'), 'w') as fh:
                     fh.write(json.dumps(posterior_vals, indent=2))
