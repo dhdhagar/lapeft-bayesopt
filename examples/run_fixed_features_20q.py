@@ -83,6 +83,9 @@ class Parser(argparse.ArgumentParser):
             "--exit_after_feat_extraction", action=argparse.BooleanOptionalAction, default=False
         )
         self.add_argument(
+            "--visualize_posterior", action=argparse.BooleanOptionalAction, default=False
+        )
+        self.add_argument(
             "--reset_cache", action=argparse.BooleanOptionalAction, default=False
         )
         self.add_argument(
@@ -305,6 +308,9 @@ def run_bayesopt(words, features, targets, test_word, n_init_data=10, T=None, se
         f'[Best f(x="{best_x_label}") = {best_y:.3f} (rank={word2rank[best_x_label]})]'
     )
 
+    # Track posterior values for visualization
+    posterior_vals = {}
+
     # The BayesOpt loop --- or just use BoTorch since LaplaceBoTorch is compatible
     for t in pbar:
         if not bo_found:
@@ -348,6 +354,19 @@ def run_bayesopt(words, features, targets, test_word, n_init_data=10, T=None, se
             trace_best_y.append(best_y)
             trace_best_rank.append(best_rank)
             trace_best_x_label.append(best_x_label)
+
+            if args.visualize_posterior:
+                dataloader = data_utils.DataLoader(
+                    data_utils.TensorDataset(features[np.argsort(shuffled_idxs)], targets[np.argsort(shuffled_idxs)]),
+                    batch_size=256, shuffle=False
+                )
+                f_vals = []
+                for x, y in dataloader:
+                    posterior = surrogate.posterior(x)
+                    f_vals.append((float(y), float(posterior.mean), float(np.sqrt(posterior.variance))))
+                posterior_vals[t] = f_vals
+                with open(os.path.join(out_dir, f'posterior_vals.json'), 'w') as fh:
+                    fh.write(json.dumps(posterior_vals, indent=2))
 
             # Update surrogate posterior with the newly acquired (x, y)
             surrogate = surrogate.condition_on_observations(new_x.unsqueeze(0), new_y.unsqueeze(0))
