@@ -262,7 +262,7 @@ def run_bayesopt(words, features, targets, test_word, n_init_data=10, T=None, se
     word2rank = {w: r for r, w in enumerate(words, 1)}
 
     # Shuffle the dataset
-    words, features, targets = skshuffle(words, features, targets, random_state=seed)
+    shuffled_idxs, words, features, targets = skshuffle(np.arange(len(words)), words, features, targets, random_state=seed)
     ground_truth_max = targets.max().item()
 
     # Obtain a small initial dataset for BO.
