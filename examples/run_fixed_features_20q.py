@@ -244,7 +244,7 @@ def load_features(dataset, test_word, test_idx):
     return features, targets
 
 
-def get_surrogate(train_x, train_y, n_objs=1, standardize=True,
+def get_surrogate(train_x, train_y, n_objs=1, standardize=True, device='cpu',
                   bnn_hidden_dim=50, bnn_activation=torch.nn.Tanh, bnn_noise_var=0.001, bnn_hess_factorization='kron',
                   gp_noise=None):
     # Or just use https://github.com/wiseodd/laplace-bayesopt for full BoTorch compatibility
@@ -264,7 +264,7 @@ def get_surrogate(train_x, train_y, n_objs=1, standardize=True,
     if args.surrogate_fn == "laplace":
         model = LaplaceBoTorch(
             get_net, train_x, train_y, noise_var=bnn_noise_var, hess_factorization=bnn_hess_factorization,
-            outcome_transform=Standardize(m=1) if standardize else None
+            outcome_transform=Standardize(m=1) if standardize else None, device=device
         )
     elif args.surrogate_fn == "gp":
         train_yvar = None  # learned noise
@@ -275,6 +275,7 @@ def get_surrogate(train_x, train_y, n_objs=1, standardize=True,
         model = SingleTaskGP(train_x, train_y,
                              train_Yvar=train_yvar,
                              outcome_transform=Standardize(m=1) if standardize else None)
+        model = model.to(device)
         mll = ExactMarginalLogLikelihood(model.likelihood, model)
         fit_gpytorch_mll(mll)
     else:
@@ -311,8 +312,8 @@ def run_bayesopt(words, features, targets, test_word, n_init_data=10, T=None, se
         raise NotImplementedError
 
     # Initialize surrogate g (learn prior from the initial dataset)
-    surrogate = get_surrogate(init_x, init_y)
-    surrogate = surrogate.to(device)
+    surrogate = get_surrogate(init_x, init_y, device=device)
+    # surrogate = surrogate.to(device)
 
     # Prepare for the BO loop
     bo_found, rand_found = False, False
