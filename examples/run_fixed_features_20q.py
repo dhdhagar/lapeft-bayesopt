@@ -244,8 +244,8 @@ def load_features(dataset, test_word, test_idx):
     return features, targets
 
 
-def get_surrogate(train_x, train_y, bnn_hidden_dim=50, bnn_activation=torch.nn.Tanh, n_objs=1,
-                  bnn_noise_var=0.001, bnn_hess_factorization='kron', standardize=True,
+def get_surrogate(train_x, train_y, n_objs=1, standardize=True,
+                  bnn_hidden_dim=50, bnn_activation=torch.nn.Tanh, bnn_noise_var=0.001, bnn_hess_factorization='kron',
                   gp_noise=None):
     # Or just use https://github.com/wiseodd/laplace-bayesopt for full BoTorch compatibility
     feature_dim = train_x.shape[-1]
@@ -387,8 +387,8 @@ def run_bayesopt(words, features, targets, test_word, n_init_data=10, T=None, se
                 f_vals = []
                 for x, y in dataloader:
                     posterior = surrogate.posterior(x)
-                    f_vals += torch.cat(
-                        (y, posterior.mean.squeeze(), posterior.variance.sqrt().squeeze()), dim=-1).tolist()
+                    f_vals += torch.cat((y, posterior.mean.squeeze(), posterior.variance.sqrt().squeeze()), dim=-1)
+                f_vals = torch.stack(f_vals, dim=0).tolist()
                 posterior_vals[t] = f_vals
                 with open(os.path.join(out_dir, f'posterior_vals_seed{seed}.json'), 'w') as fh:
                     fh.write(json.dumps(posterior_vals, indent=2))
