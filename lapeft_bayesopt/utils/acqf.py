@@ -2,9 +2,54 @@ import torch
 import torch.distributions as dists
 
 
+def thompson_sampling_bo(
+        model, gamma: float = 1., random_state: int = 1, **kwargs
+) -> torch.Tensor:
+    """
+    Single objective sampling.
+
+    Parameters:
+    -----------
+    f_mean: torch.Tensor
+        Shape (B,)
+
+    f_var: torch.Tensor
+        Shape (B,)
+
+    gamma: 0 <= float <= 1
+        Exploration parameter
+
+    Returns:
+    --------
+    acq_fn: Callable
+    """
+
+    def acq_fn(x):
+        """
+        Parameters:
+        -----------
+        x: torch.Tensor
+            Shape (B, D)
+
+        Returns:
+        --------
+        ts: torch.Tensor
+            Shape(B, )
+        """
+        device = model.device
+        generator = torch.Generator(device=device).manual_seed(random_state)
+        posterior = model.posterior(x)
+        f_mean, f_var = posterior.mean, posterior.variance
+        # For multiobjective problems take the covariance matrix
+        # i.e., f_cov = posterior.covariance_matrix
+        return f_mean + gamma * f_var.sqrt() * torch.randn(*f_var.shape, device=device, generator=generator)
+
+    return acq_fn
+
+
 def thompson_sampling(
-    f_mean: torch.Tensor, f_var: torch.Tensor,
-    gamma: float = 1., random_state: int = 1
+        f_mean: torch.Tensor, f_var: torch.Tensor,
+        gamma: float = 1., random_state: int = 1
 ) -> torch.Tensor:
     """
     Single objective sampling.
@@ -31,8 +76,8 @@ def thompson_sampling(
 
 
 def thompson_sampling_multivariate(
-    f_mean: torch.Tensor, f_cov: torch.Tensor,
-    gamma: float = 1., random_state: int = 1, curr_best_val: float = None
+        f_mean: torch.Tensor, f_cov: torch.Tensor,
+        gamma: float = 1., random_state: int = 1, curr_best_val: float = None
 ) -> torch.Tensor:
     """
     Multi objective sampling.
@@ -61,8 +106,8 @@ def thompson_sampling_multivariate(
 
 
 def ucb(
-    f_mean: torch.Tensor, f_var: torch.Tensor,
-    gamma: float = 0.1, curr_best_val: float = None
+        f_mean: torch.Tensor, f_var: torch.Tensor,
+        gamma: float = 0.1, curr_best_val: float = None
 ) -> torch.Tensor:
     """
     Single objective upper confidence bound.
@@ -87,8 +132,8 @@ def ucb(
 
 
 def ei(
-    f_mean: torch.Tensor, f_var: torch.Tensor,
-    curr_best_val: float, gamma: float = 0.01
+        f_mean: torch.Tensor, f_var: torch.Tensor,
+        curr_best_val: float, gamma: float = 0.01
 ) -> torch.Tensor:
     """
     Single-objective expected improvement.
@@ -145,6 +190,6 @@ def scalarize(y: torch.Tensor, weights: torch.Tensor = None) -> torch.Tensor:
     if weights is not None:
         assert weights.shape == (k,)
     else:
-        weights = torch.ones(k) * 1/k
+        weights = torch.ones(k) * 1 / k
 
     return torch.sum(weights[None, :] * y, dim=1)

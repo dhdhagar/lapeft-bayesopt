@@ -18,7 +18,7 @@ from fixed_feat_surrogate import LaplaceBoTorch
 from lapeft_bayesopt.foundation_models.t5 import T5Regressor
 from lapeft_bayesopt.foundation_models.llama2 import Llama2Regressor
 from lapeft_bayesopt.foundation_models.utils import get_llama2_tokenizer, get_t5_tokenizer
-from lapeft_bayesopt.utils.acqf import thompson_sampling, ucb, ei
+from lapeft_bayesopt.utils.acqf import thompson_sampling_bo, thompson_sampling, ucb, ei
 from lapeft_bayesopt.utils import helpers
 # Our self-defined problems, using the format provided by lapeft-bayesopt
 from data_processor import TwentyQuestionsDataProcessor
@@ -70,8 +70,8 @@ class Parser(argparse.ArgumentParser):
             "--surrogate_fn", type=str, choices=['laplace', 'gp'], default="laplace"
         )
         self.add_argument(
-            "--acquisition_fn", type=str, choices=['thompson_sampling', 'ucb', 'ei', 'logEI'], default="thompson_sampling"
-        )
+            "--acquisition_fn", type=str, choices=['thompson_sampling', 'logEI'], default="thompson_sampling"
+        )  # 'ucb', 'ei',
         self.add_argument(
             "--cuda", action=argparse.BooleanOptionalAction, default=True
         )
@@ -243,31 +243,36 @@ def load_features(dataset, test_word, test_idx):
     return features, targets
 
 
-def get_surrogate(train_x, train_y, hidden_dim=50, activation=torch.nn.Tanh, n_objs=1,
-                  noise_var=0.001, hess_factorization='kron'):
+def get_surrogate(train_x, train_y, bnn_hidden_dim=50, bnn_activation=torch.nn.Tanh, n_objs=1,
+                  bnn_noise_var=0.001, bnn_hess_factorization='kron', gp_standardize=True,
+                  gp_noise=None):
     # Or just use https://github.com/wiseodd/laplace-bayesopt for full BoTorch compatibility
     feature_dim = train_x.shape[-1]
 
     def get_net():  # needs to be a callable for LaplaceBoTorch
         return torch.nn.Sequential(
-            torch.nn.Linear(feature_dim, hidden_dim),
-            activation(),
-            torch.nn.Linear(hidden_dim, hidden_dim),
-            activation(),
-            torch.nn.Linear(hidden_dim, n_objs)
+            torch.nn.Linear(feature_dim, bnn_hidden_dim),
+            bnn_activation(),
+            torch.nn.Linear(bnn_hidden_dim, bnn_hidden_dim),
+            bnn_activation(),
+            torch.nn.Linear(bnn_hidden_dim, n_objs)
         )
 
     if args.surrogate_fn == "laplace":
         model = LaplaceBoTorch(
-            get_net, train_x, train_y, noise_var=noise_var, hess_factorization=hess_factorization
+            get_net, train_x, train_y, noise_var=bnn_noise_var, hess_factorization=bnn_hess_factorization
         )
     elif args.surrogate_fn == "gp":
-        # train_Yvar = torch.full_like(train_Y, 1e-6)
         if train_y.size(-1) != 1:
             train_y = train_y.unsqueeze(-1)
+        train_yvar = None  # learned noise
+        if gp_noise == 0:  # no noise
+            train_yvar = torch.full_like(train_Y, 1e-6)
+        elif gp_noise is not None:  # fixed noise
+            train_yvar = torch.full_like(train_Y, gp_noise)
         model = SingleTaskGP(train_x, train_y,
-                             # train_Yvar,
-                             outcome_transform=Standardize(m=1))
+                             train_Yvar=train_yvar,
+                             outcome_transform=Standardize(m=1) if gp_standardize else None)
         mll = ExactMarginalLogLikelihood(model.likelihood, model)
         fit_gpytorch_mll(mll)
     else:
@@ -286,7 +291,8 @@ def run_bayesopt(words, features, targets, test_word, n_init_data=10, T=None, se
     word2rank = {w: r for r, w in enumerate(words, 1)}
 
     # Shuffle the dataset
-    shuffled_idxs, words, features, targets = skshuffle(np.arange(len(words)), words, features, targets, random_state=seed)
+    shuffled_idxs, words, features, targets = skshuffle(np.arange(len(words)), words, features, targets,
+                                                        random_state=seed)
     ground_truth_max = targets.max().item()
 
     # Obtain a small initial dataset for BO.
@@ -346,25 +352,26 @@ def run_bayesopt(words, features, targets, test_word, n_init_data=10, T=None, se
             acq_vals = []
             with torch.no_grad():
                 for x, y in dataloader:
-                    if args.surrogate_fn == "laplace":
-                        # Obtain the posterior predictive distribution p(g_t(x) | D_t)
-                        posterior = surrogate.posterior(x)
-                        f_mean, f_var = posterior.mean, posterior.variance
-                        # For multiobjective problems take the covariance matrix
-                        # i.e., f_cov = posterior.covariance_matrix
-
-                        # Compute value of the acquisition function
-                        acq_fn = {
-                            "thompson_sampling": thompson_sampling,
-                            "ucb": ucb,
-                            "ei": ei
-                        }[args.acquisition_fn]
-                        acq_vals.append(acq_fn(f_mean, f_var, curr_best_val=best_y))
-                    else:
-                        acq_fn = {
-                            "logEI": LogExpectedImprovement(model=surrogate, best_f=best_y),
-                        }[args.acquisition_fn]
-                        acq_vals.append(acq_fn(x.unsqueeze(1)))
+                    # if args.surrogate_fn == "laplace":
+                    #     # Obtain the posterior predictive distribution p(g_t(x) | D_t)
+                    #     posterior = surrogate.posterior(x)
+                    #     f_mean, f_var = posterior.mean, posterior.variance
+                    #     # For multiobjective problems take the covariance matrix
+                    #     # i.e., f_cov = posterior.covariance_matrix
+                    #
+                    #     # Compute value of the acquisition function
+                    #     acq_fn = {
+                    #         "thompson_sampling": thompson_sampling,
+                    #         "ucb": ucb,
+                    #         "ei": ei
+                    #     }[args.acquisition_fn]
+                    #     acq_vals.append(acq_fn(f_mean, f_var, curr_best_val=best_y))
+                    # else:
+                    acq_fn = {
+                        "logEI": LogExpectedImprovement(model=surrogate, best_f=best_y),
+                        "thompson_sampling": thompson_sampling_bo(model=surrogate),
+                    }[args.acquisition_fn]
+                    acq_vals.append(acq_fn(x.unsqueeze(1)))
 
             # Pick the candidate that maximizes the acquisition fn and update seen idxs
             acq_vals = torch.cat(acq_vals, dim=0).cpu().squeeze()
