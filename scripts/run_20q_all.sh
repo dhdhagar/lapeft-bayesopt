@@ -81,9 +81,7 @@ for DATASET in $DATASETS; do
                                     --n_gpus $n_gpus \
                                     --n_cpus $n_cpus \
                                     --mem $mem \
-                                    --time $time \
-                                    # pass wildcard if not empty
-                                    ${WILDCARD:+"--wildcard \"$WILDCARD\""}
+                                    --time $time ${WILDCARD:+"--wildcard \"$WILDCARD\""}
                             done
                         done
                     done
