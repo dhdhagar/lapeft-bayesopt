@@ -83,7 +83,7 @@ for DATASET in $DATASETS; do
                                     --mem $mem \
                                     --time $time \
                                     # pass wildcard if not empty
-                                    ${WILDCARD:+"--wildcard $WILDCARD"}
+                                    ${WILDCARD:+"--wildcard \"$WILDCARD\""}
                             done
                         done
                     done
