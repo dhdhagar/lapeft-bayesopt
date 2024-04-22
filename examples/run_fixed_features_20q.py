@@ -263,8 +263,9 @@ def get_surrogate(train_x, train_y, n_objs=1, standardize=True, device='cpu',
         train_y = train_y.unsqueeze(-1)
     if args.surrogate_fn == "laplace":
         model = LaplaceBoTorch(
-            get_net, train_x, train_y, noise_var=bnn_noise_var, hess_factorization=bnn_hess_factorization,
-            outcome_transform=Standardize(m=1) if standardize else None, device=device
+            get_net, train_x.to(device), train_y.to(device), noise_var=bnn_noise_var,
+            hess_factorization=bnn_hess_factorization, outcome_transform=Standardize(m=1) if standardize else None,
+            device=device
         )
     elif args.surrogate_fn == "gp":
         train_yvar = None  # learned noise
@@ -279,7 +280,7 @@ def get_surrogate(train_x, train_y, n_objs=1, standardize=True, device='cpu',
         fit_gpytorch_mll(mll)
     else:
         raise NotImplementedError
-    return model
+    return model.to(device)
 
 
 def run_bayesopt(words, features, targets, test_word, n_init_data=10, T=None, seed=17, device='cpu'):
@@ -312,7 +313,7 @@ def run_bayesopt(words, features, targets, test_word, n_init_data=10, T=None, se
 
     # Initialize surrogate g (learn prior from the initial dataset)
     surrogate = get_surrogate(init_x, init_y, device=device)
-    surrogate = surrogate.to(device)
+    # surrogate = surrogate.to(device)
 
     # Prepare for the BO loop
     bo_found, rand_found = False, False
