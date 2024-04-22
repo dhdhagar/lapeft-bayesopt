@@ -358,7 +358,7 @@ def run_bayesopt(words, features, targets, test_word, n_init_data=10, T=None, se
             }[args.acquisition_fn]
             for x, y in dataloader:
                 with torch.no_grad():
-                    acq_vals.append(acq_fn(x.unsqeeze(1)).squeeze())
+                    acq_vals.append(acq_fn(x.unsqueeze(1)).squeeze())
 
             # Pick the candidate that maximizes the acquisition fn and update seen idxs
             acq_vals = torch.cat(acq_vals, dim=0).cpu()
