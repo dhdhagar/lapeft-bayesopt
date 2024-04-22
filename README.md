@@ -5,6 +5,11 @@
 pip install gensim
 ```
 
+```shell
+# Install laplace-bayesopt for unifying the BO interface
+pip install git+https://git@github.com/wiseodd/laplace-bayesopt
+```
+
 ---
 
 # `lapeft-bayesopt`: Discrete Bayesian Optimization with LLM + PEFT + Laplace Approximation
