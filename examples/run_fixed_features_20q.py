@@ -275,12 +275,11 @@ def get_surrogate(train_x, train_y, n_objs=1, standardize=True, device='cpu',
         model = SingleTaskGP(train_x, train_y,
                              train_Yvar=train_yvar,
                              outcome_transform=Standardize(m=1) if standardize else None)
-        model = model.to(device)
         mll = ExactMarginalLogLikelihood(model.likelihood, model)
         fit_gpytorch_mll(mll)
     else:
         raise NotImplementedError
-    return model
+    return model.to(device)
 
 
 def run_bayesopt(words, features, targets, test_word, n_init_data=10, T=None, seed=17, device='cpu'):
