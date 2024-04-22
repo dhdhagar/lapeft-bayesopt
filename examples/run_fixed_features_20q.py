@@ -352,31 +352,16 @@ def run_bayesopt(words, features, targets, test_word, n_init_data=10, T=None, se
             # Make surrogate predictions over all candidates,
             # then use the predictive mean and variance to compute the acquisition function values
             acq_vals = []
-            with torch.no_grad():
-                for x, y in dataloader:
-                    # if args.surrogate_fn == "laplace":
-                    #     # Obtain the posterior predictive distribution p(g_t(x) | D_t)
-                    #     posterior = surrogate.posterior(x)
-                    #     f_mean, f_var = posterior.mean, posterior.variance
-                    #     # For multiobjective problems take the covariance matrix
-                    #     # i.e., f_cov = posterior.covariance_matrix
-                    #
-                    #     # Compute value of the acquisition function
-                    #     acq_fn = {
-                    #         "thompson_sampling": thompson_sampling,
-                    #         "ucb": ucb,
-                    #         "ei": ei
-                    #     }[args.acquisition_fn]
-                    #     acq_vals.append(acq_fn(f_mean, f_var, curr_best_val=best_y))
-                    # else:
-                    acq_fn = {
-                        "logEI": LogExpectedImprovement(model=surrogate, best_f=best_y),
-                        "thompson_sampling": ThompsonSampling(model=surrogate),
-                    }[args.acquisition_fn]
-                    acq_vals.append(acq_fn(x.unsqueeze(1)))
+            acq_fn = {
+                "logEI": LogExpectedImprovement(model=surrogate, best_f=best_y),
+                "thompson_sampling": ThompsonSampling(model=surrogate),
+            }[args.acquisition_fn]
+            for x, y in dataloader:
+                with torch.no_grad():
+                    acq_vals.append(acq_fn(x))
 
             # Pick the candidate that maximizes the acquisition fn and update seen idxs
-            acq_vals = torch.cat(acq_vals, dim=0).cpu().squeeze()
+            acq_vals = torch.cat(acq_vals, dim=0).cpu()
             _idx_best = torch.argmax(acq_vals).item()
             idx_best = unseen_idxs[_idx_best]
             seen_idxs.add(idx_best)  # Add to seen idxs
@@ -402,16 +387,14 @@ def run_bayesopt(words, features, targets, test_word, n_init_data=10, T=None, se
                 f_vals = []
                 for x, y in dataloader:
                     posterior = surrogate.posterior(x)
-                    _y = y.unsqueeze(-1)
                     f_vals += torch.cat(
-                        (_y, posterior.mean.reshape(_y.shape), posterior.variance.sqrt().reshape(_y.shape)),
-                        dim=-1).tolist()
+                        (_y, posterior.mean.squeeze(), posterior.variance.sqrt().squeeze()), dim=-1).tolist()
                 posterior_vals[t] = f_vals
                 with open(os.path.join(out_dir, f'posterior_vals_seed{seed}.json'), 'w') as fh:
                     fh.write(json.dumps(posterior_vals, indent=2))
 
             # Update surrogate posterior with the newly acquired (x, y)
-            surrogate = surrogate.condition_on_observations(new_x.unsqueeze(0), new_y.unsqueeze(0))
+            surrogate = surrogate.condition_on_observations(new_x.reshape(1, -1), new_y.reshape(1, -1))
 
             pbar.set_description(
                 f'[Best f(x="{best_x_label}") = {best_y:.3f} (rank={word2rank[best_x_label]}), '
