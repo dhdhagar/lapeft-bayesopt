@@ -259,14 +259,14 @@ def get_surrogate(train_x, train_y, bnn_hidden_dim=50, bnn_activation=torch.nn.T
             torch.nn.Linear(bnn_hidden_dim, n_objs)
         )
 
+    if train_y.size(-1) != 1:
+        train_y = train_y.unsqueeze(-1)
     if args.surrogate_fn == "laplace":
         model = LaplaceBoTorch(
             get_net, train_x, train_y, noise_var=bnn_noise_var, hess_factorization=bnn_hess_factorization,
             outcome_transform=Standardize(m=1) if standardize else None
         )
     elif args.surrogate_fn == "gp":
-        if train_y.size(-1) != 1:
-            train_y = train_y.unsqueeze(-1)
         train_yvar = None  # learned noise
         if gp_noise == 0:  # no noise
             train_yvar = torch.full_like(train_Y, 1e-6)
