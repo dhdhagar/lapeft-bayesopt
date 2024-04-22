@@ -279,7 +279,7 @@ def get_surrogate(train_x, train_y, n_objs=1, standardize=True, device='cpu',
         fit_gpytorch_mll(mll)
     else:
         raise NotImplementedError
-    return model.to(device)
+    return model
 
 
 def run_bayesopt(words, features, targets, test_word, n_init_data=10, T=None, seed=17, device='cpu'):
@@ -312,7 +312,7 @@ def run_bayesopt(words, features, targets, test_word, n_init_data=10, T=None, se
 
     # Initialize surrogate g (learn prior from the initial dataset)
     surrogate = get_surrogate(init_x, init_y, device=device)
-    # surrogate = surrogate.to(device)
+    surrogate = surrogate.to(device)
 
     # Prepare for the BO loop
     bo_found, rand_found = False, False
