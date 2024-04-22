@@ -244,7 +244,7 @@ def load_features(dataset, test_word, test_idx):
 
 
 def get_surrogate(train_x, train_y, bnn_hidden_dim=50, bnn_activation=torch.nn.Tanh, n_objs=1,
-                  bnn_noise_var=0.001, bnn_hess_factorization='kron', gp_standardize=True,
+                  bnn_noise_var=0.001, bnn_hess_factorization='kron', standardize=True,
                   gp_noise=None):
     # Or just use https://github.com/wiseodd/laplace-bayesopt for full BoTorch compatibility
     feature_dim = train_x.shape[-1]
@@ -260,7 +260,8 @@ def get_surrogate(train_x, train_y, bnn_hidden_dim=50, bnn_activation=torch.nn.T
 
     if args.surrogate_fn == "laplace":
         model = LaplaceBoTorch(
-            get_net, train_x, train_y, noise_var=bnn_noise_var, hess_factorization=bnn_hess_factorization
+            get_net, train_x, train_y, noise_var=bnn_noise_var, hess_factorization=bnn_hess_factorization,
+            outcome_transform=Standardize(m=1) if standardize else None
         )
     elif args.surrogate_fn == "gp":
         if train_y.size(-1) != 1:
@@ -272,7 +273,7 @@ def get_surrogate(train_x, train_y, bnn_hidden_dim=50, bnn_activation=torch.nn.T
             train_yvar = torch.full_like(train_Y, gp_noise)
         model = SingleTaskGP(train_x, train_y,
                              train_Yvar=train_yvar,
-                             outcome_transform=Standardize(m=1) if gp_standardize else None)
+                             outcome_transform=Standardize(m=1) if standardize else None)
         mll = ExactMarginalLogLikelihood(model.likelihood, model)
         fit_gpytorch_mll(mll)
     else:
