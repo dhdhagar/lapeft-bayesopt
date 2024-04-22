@@ -18,7 +18,7 @@ from fixed_feat_surrogate import LaplaceBoTorch
 from lapeft_bayesopt.foundation_models.t5 import T5Regressor
 from lapeft_bayesopt.foundation_models.llama2 import Llama2Regressor
 from lapeft_bayesopt.foundation_models.utils import get_llama2_tokenizer, get_t5_tokenizer
-from lapeft_bayesopt.utils.acqf import thompson_sampling_bo, thompson_sampling, ucb, ei
+from lapeft_bayesopt.utils.acqf import ThompsonSampling  # , thompson_sampling, ucb, ei
 from lapeft_bayesopt.utils import helpers
 # Our self-defined problems, using the format provided by lapeft-bayesopt
 from data_processor import TwentyQuestionsDataProcessor
@@ -369,7 +369,7 @@ def run_bayesopt(words, features, targets, test_word, n_init_data=10, T=None, se
                     # else:
                     acq_fn = {
                         "logEI": LogExpectedImprovement(model=surrogate, best_f=best_y),
-                        "thompson_sampling": thompson_sampling_bo(model=surrogate),
+                        "thompson_sampling": ThompsonSampling(model=surrogate),
                     }[args.acquisition_fn]
                     acq_vals.append(acq_fn(x.unsqueeze(1)))
 

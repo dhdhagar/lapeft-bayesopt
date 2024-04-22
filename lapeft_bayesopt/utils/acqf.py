@@ -1,50 +1,62 @@
 import torch
 import torch.distributions as dists
+from botorch.acquisition.analytic import AnalyticAcquisitionFunction
 
 
-def thompson_sampling_bo(
-        model, gamma: float = 1., random_state: int = 1, **kwargs
-) -> torch.Tensor:
+# From: https://github.com/wiseodd/laplace-bayesopt/blob/master/laplace_bayesopt/acqf.py
+class ThompsonSampling(AnalyticAcquisitionFunction):
     """
-    Single objective sampling.
+    Thompson sampling acquisition function. While it uses a posterior sample, it is an analytic one.
+    I.e. once we pick a sample of the posterior f_s ~ p(f | D), f_s is a deterministic function over x.
 
     Parameters:
     -----------
-    f_mean: torch.Tensor
-        Shape (B,)
+    model: botorch.models.model.Model
 
-    f_var: torch.Tensor
-        Shape (B,)
+    posterior_transform: botorch.acquisition.objective.PosteriorTransform
+        Optional
 
-    gamma: 0 <= float <= 1
-        Exploration parameter
+    maximize: bool, default = True
+        Whether to maximize the acqf f_s or minimize it
 
-    Returns:
-    --------
-    acq_fn: Callable
+    random_state: int, default = 123
+        The random state of the sampling f_s ~ p(f | D). This is to ensure that for any given x,
+        the sample from p(f(x) | D) comes from the same sample posterior sample f_s ~ p(f | D).
     """
 
-    def acq_fn(x):
+    def __init__(
+            self, model, posterior_transform=None, maximize=True, random_state=123
+    ):
+        super().__init__(model, posterior_transform)
+        self.maximize = maximize
+        self.random_state = random_state
+
+    def forward(self, x):
         """
         Parameters:
         -----------
         x: torch.Tensor
-            Shape (B, D)
+            Shape (n, 1, d)
 
         Returns:
         --------
-        ts: torch.Tensor
-            Shape(B, )
+        f_sample: torch.Tensor
+            Shape (n,)
         """
-        device = model.device
-        generator = torch.Generator(device=device).manual_seed(random_state)
-        posterior = model.posterior(x)
-        f_mean, f_var = posterior.mean, posterior.variance
-        # For multiobjective problems take the covariance matrix
-        # i.e., f_cov = posterior.covariance_matrix
-        return f_mean + gamma * f_var.sqrt() * torch.randn(*f_var.shape, device=device, generator=generator)
+        mean, std = self._mean_and_sigma(x)
 
-    return acq_fn
+        if len(mean.shape) == 0:
+            mean = mean.unsqueeze(0)
+        if len(std.shape) == 0:
+            std = std.unsqueeze(0)
+
+        generator = torch.Generator(device=x.device).manual_seed(self.random_state)
+        eps = torch.randn(*std.shape, device=x.device, generator=generator)
+        f_sample = mean + std * eps
+
+        # BoTorch assumes acqf to be maximization
+        # https://github.com/pytorch/botorch/blob/0e74bb60be3492590ea88d6373d89a877c6a52c1/botorch/generation/gen.py#L249-L252
+        return f_sample if self.maximize else -f_sample
 
 
 def thompson_sampling(
