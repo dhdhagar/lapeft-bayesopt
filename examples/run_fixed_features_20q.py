@@ -386,8 +386,10 @@ def run_bayesopt(words, features, targets, test_word, n_init_data=10, T=None, se
                 )
                 f_vals = []
                 for x, y in dataloader:
-                    posterior = surrogate.posterior(x.to(device)).cpu()
-                    f_vals += torch.stack((y, posterior.mean.squeeze(), posterior.variance.sqrt().squeeze()), dim=-1)
+                    posterior = surrogate.posterior(x.to(device))
+                    with torch.no_grad():
+                        f_vals.append(torch.stack(
+                            (y.to(device), posterior.mean.squeeze(), posterior.variance.sqrt().squeeze()), dim=-1))
                 f_vals = torch.cat(f_vals, dim=0).tolist()
                 posterior_vals[t] = f_vals
                 with open(os.path.join(out_dir, f'posterior_vals_seed{seed}.json'), 'w') as fh:
