@@ -396,7 +396,8 @@ def run_bayesopt(words, features, targets, test_word, n_init_data=10, T=None, se
                     fh.write(json.dumps(posterior_vals, indent=2))
 
             # Update surrogate posterior with the newly acquired (x, y)
-            surrogate = surrogate.condition_on_observations(new_x.reshape(1, -1), new_y.reshape(1, -1))
+            surrogate = surrogate.condition_on_observations(new_x.reshape(1, -1).to(device),
+                                                            new_y.reshape(1, -1).to(device))
 
             pbar.set_description(
                 f'[Best f(x="{best_x_label}") = {best_y:.3f} (rank={word2rank[best_x_label]}), '
