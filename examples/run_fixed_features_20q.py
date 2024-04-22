@@ -257,7 +257,7 @@ def get_surrogate(train_x, train_y, n_objs=1, standardize=True, device='cpu',
             torch.nn.Linear(bnn_hidden_dim, bnn_hidden_dim),
             bnn_activation(),
             torch.nn.Linear(bnn_hidden_dim, n_objs)
-        )
+        ).to(device)
 
     if train_y.size(-1) != 1:
         train_y = train_y.unsqueeze(-1)
@@ -313,7 +313,6 @@ def run_bayesopt(words, features, targets, test_word, n_init_data=10, T=None, se
 
     # Initialize surrogate g (learn prior from the initial dataset)
     surrogate = get_surrogate(init_x, init_y, device=device)
-    # surrogate = surrogate.to(device)
 
     # Prepare for the BO loop
     bo_found, rand_found = False, False
@@ -359,7 +358,7 @@ def run_bayesopt(words, features, targets, test_word, n_init_data=10, T=None, se
             }[args.acquisition_fn]
             for x, y in dataloader:
                 with torch.no_grad():
-                    acq_vals.append(acq_fn(x.unsqueeze(1)).squeeze())
+                    acq_vals.append(acq_fn(x.to(device).unsqueeze(1)).squeeze())
 
             # Pick the candidate that maximizes the acquisition fn and update seen idxs
             acq_vals = torch.cat(acq_vals, dim=0).cpu()
@@ -387,7 +386,7 @@ def run_bayesopt(words, features, targets, test_word, n_init_data=10, T=None, se
                 )
                 f_vals = []
                 for x, y in dataloader:
-                    posterior = surrogate.posterior(x)
+                    posterior = surrogate.posterior(x.to(device)).cpu()
                     f_vals += torch.stack((y, posterior.mean.squeeze(), posterior.variance.sqrt().squeeze()), dim=-1)
                 f_vals = torch.cat(f_vals, dim=0).tolist()
                 posterior_vals[t] = f_vals
