@@ -40,6 +40,7 @@ while [[ $# -gt 0 ]]; do
         --feats) FEATS="$2"; shift ;;
         --feat_types) FEAT_TYPES="$2"; shift ;;
         --steps) STEPS="$2"; shift ;;
+        --wildcard) WILDCARD="$2"; shift ;;
         *) echo "Invalid option: $1" >&2; exit 1 ;;
     esac
     shift
@@ -80,7 +81,9 @@ for DATASET in $DATASETS; do
                                     --n_gpus $n_gpus \
                                     --n_cpus $n_cpus \
                                     --mem $mem \
-                                    --time $time
+                                    --time $time \
+                                    # pass wildcard if not empty
+                                    ${WILDCARD:+"--wildcard $WILDCARD"}
                             done
                         done
                     done
