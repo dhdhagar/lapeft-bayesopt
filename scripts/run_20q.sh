@@ -33,6 +33,8 @@ HINT=""
 FEAT="average"
 FEAT_TYPE="no-additive_features"
 TEST_WORD="computer"
+SURROGATE="laplace"
+ACQUISITION="thompson_sampling"
 N_INIT_DATA=5
 N_SEEDS=5
 STEPS=100
@@ -58,6 +60,8 @@ while [[ $# -gt 0 ]]; do
         --feat) FEAT="$2"; shift ;;
         --feat_type) FEAT_TYPE="$2"; shift ;;
         --steps) STEPS="$2"; shift ;;
+        --surrogate) SURROGATE="$2"; shift ;;
+        --acquisition) ACQUISITION="$2"; shift ;;
         *) echo "Invalid option: $1" >&2; exit 1 ;;
     esac
     shift
@@ -68,7 +72,8 @@ echo "
 Job arguments: desc=${desc}, partition=${partition}, n_gpus=${n_gpus}, mem=${mem}, time=${time}"
 # Echo all script arguments in one line
 echo "Script arguments: dataset=${DATASET}, test_word=${TEST_WORD}, n_init_data=${N_INIT_DATA}, n_seeds=${N_SEEDS}, \
-model=${MODEL}, prompt=${PROMPT}, hint="${HINT}", feat=${FEAT}, feat_type=${FEAT_TYPE}, steps=${STEPS}"
+model=${MODEL}, prompt=${PROMPT}, hint="${HINT}", feat=${FEAT}, feat_type=${FEAT_TYPE}, steps=${STEPS}, \
+surrogate=${SURROGATE}, acquisition=${ACQUISITION}"
 
 # Create log directory for the job
 job_dir="jobs/${desc}"
@@ -83,10 +88,12 @@ fi
 
 # Determine output dir for script
 if [[ $PROMPT == hint* ]]; then
-  EXPERIMENT="${TEST_WORD}_${MODEL}_${PROMPT}-$(split_and_join "${HINT}")_${FEAT}${FEAT_LABEL}_n${N_INIT_DATA}_t${STEPS}"
+  HINT_LABEL="-$(split_and_join "${HINT}")"
 else
-  EXPERIMENT="${TEST_WORD}_${MODEL}_${PROMPT}_${FEAT}${FEAT_LABEL}_n${N_INIT_DATA}_t${STEPS}"
+  HINT_LABEL=""
 fi
+EXPERIMENT="${TEST_WORD}_${SURROGATE}_${ACQUISITION}_${MODEL}_${PROMPT}${HINT_LABEL}_${FEAT}${FEAT_LABEL}\
+_n${N_INIT_DATA}_t${STEPS}"
 OUT_DIR="outputs/${desc}/${DATASET}/${EXPERIMENT}"
 
 # Determine data_dir
@@ -110,6 +117,8 @@ JOB_DESC=${desc}_${EXPERIMENT} && JOB_NAME=${JOB_DESC}_${RUN_ID} && \
       --hint="${HINT}" \
       --feat_extraction_strategy="${FEAT}" \
       --${FEAT_TYPE} \
+      --surrogate_fn="${SURROGATE}" \
+      --acquisition_fn="${ACQUISITION}" \
       --T=${STEPS} \
       --out_dir="${OUT_DIR}"
 
