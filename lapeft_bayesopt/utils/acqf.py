@@ -32,7 +32,7 @@ def thompson_sampling(
 
 def thompson_sampling_multivariate(
     f_mean: torch.Tensor, f_cov: torch.Tensor,
-    gamma: float = 1., random_state: int = 1
+    gamma: float = 1., random_state: int = 1, curr_best_val: float = None
 ) -> torch.Tensor:
     """
     Multi objective sampling.
@@ -62,7 +62,7 @@ def thompson_sampling_multivariate(
 
 def ucb(
     f_mean: torch.Tensor, f_var: torch.Tensor,
-    gamma: float = 0.1
+    gamma: float = 0.1, curr_best_val: float = None
 ) -> torch.Tensor:
     """
     Single objective upper confidence bound.
