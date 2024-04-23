@@ -558,14 +558,14 @@ def plot_posterior(posterior_vals, obs_y, obs_y_rank, n_warm_start, path, animat
     y, mean, std = vals[:, 0], vals[:, 1], vals[:, 2]
     x = 1 + np.arange(len(y))  # Rank of the words
     ax.plot(x, y, label="True")
-    ax.plot(x, mean, label="Posterior", color="orange")
+    ax.plot(x, mean, label="Posterior", color="orange", alpha=0.8)
     ax.scatter(obs_y_rank[:n_warm_start], obs_y[:n_warm_start], label="Warm-start", color="gray")
     ax.fill_between(x, mean - std, mean + std, alpha=0.2, color="orange")
     ax.legend()
     ax.set_title(f"t = {len(all_vals) - 1 if not animate else 0}")
     ax.set_ylabel("Similarity")
     # Set y limit to be the same for all frames
-    ax.set_ylim([-0.1, 1.1])
+    ax.set_ylim([-5, 5] if args.surrogate_fn == "laplace" else [-0.1, 1.1])
     ax.set_xlabel("Rank")
 
     def update(frame):
@@ -575,7 +575,7 @@ def plot_posterior(posterior_vals, obs_y, obs_y_rank, n_warm_start, path, animat
         y, mean, std = vals[:, 0], vals[:, 1], vals[:, 2]
         x = 1 + np.arange(len(y))
         ax.plot(x, y, label="True")
-        ax.plot(x, mean, label="Posterior", color="orange")
+        ax.plot(x, mean, label="Posterior", color="orange", alpha=0.8)
         ax.scatter(obs_y_rank[:n_warm_start], obs_y[:n_warm_start], label="Warm-start", color="gray")
         ax.scatter(obs_y_rank[n_warm_start + 1:n_warm_start + frame], obs_y[n_warm_start + 1:n_warm_start + frame],
                    label="BO Observation", color="red")
@@ -584,7 +584,7 @@ def plot_posterior(posterior_vals, obs_y, obs_y_rank, n_warm_start, path, animat
         ax.set_title(f"t = {frame}")
         ax.set_ylabel("Similarity")
         # Set y limit to be the same for all frames
-        ax.set_ylim([-0.1, 1.1])
+        ax.set_ylim([-5, 5] if args.surrogate_fn == "laplace" else [-0.1, 1.1])
         ax.set_xlabel("Rank")
 
     if animate:
