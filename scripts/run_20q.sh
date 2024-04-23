@@ -19,17 +19,17 @@ split_and_join() {
 
 # Job defaults
 desc="20q"
-partition="gpu"
-n_gpus="1080ti:1"
-mem="100G"
-n_cpus="4"
-time="0-1:00:00"
+partition="gpu"  # gypsum-1080ti on Unity
+n_gpus="1"  # 1080ti:1 on Blake
+mem="20G"
+n_cpus="1"
+time="0-6:00:00"
 
 # Script defaults
-DATASET="word2vec-1000"  # word2vec-1000 word2vec-2000 word2vec-3000 word2vec-4000
-MODEL="t5-small"
+DATASET="word2vec-2000"  # word2vec-1000 word2vec-2000 word2vec-3000 word2vec-4000
+MODEL="t5-base"
 PROMPT="word"
-HINT=""
+HINT="Hint: the hidden word is an example of a machine."
 FEAT="average"
 FEAT_TYPE="no-additive_features"
 TEST_WORD="computer"
