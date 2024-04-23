@@ -515,6 +515,7 @@ def plot(results, aggregate=False):
         plt.xlabel(r'$t$')
         plt.ylabel(y_label)
         plt.title(f'{title_experiment}\n' + fr'$\bf{{{title_result}}}$', wrap=True)
+        plt.grid()
         plt.savefig(os.path.join(out_dir, f'seed-{results["seed"]}.png'), bbox_inches="tight")
         print(f'Saved plot at ' + os.path.join(out_dir, f'seed-{results["seed"]}.png'))
     else:
@@ -544,6 +545,7 @@ def plot(results, aggregate=False):
         plt.xlabel(r'$t$')
         plt.ylabel(y_label)
         plt.title(f'{title_experiment}\n' + fr'$\bf{{{title_result}}}$', wrap=True)
+        plt.grid()
         plt.savefig(os.path.join(out_dir, f'aggregate.png'), bbox_inches="tight")
         print(f'Saved final plot at ' + os.path.join(out_dir, f'aggregate.png'))
 
