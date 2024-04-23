@@ -570,6 +570,7 @@ def plot_posterior(posterior_vals, obs_y, obs_y_rank, n_warm_start, path, animat
     # Set y limit to be the same for all frames
     ax.set_ylim([-5, 5] if args.surrogate_fn == "laplace" else [-0.1, 1.1])
     ax.set_xlabel("Rank")
+    ax.grid()
 
     def update(frame):
         ax.clear()
@@ -592,6 +593,7 @@ def plot_posterior(posterior_vals, obs_y, obs_y_rank, n_warm_start, path, animat
         # Set y limit to be the same for all frames
         ax.set_ylim([-5, 5] if args.surrogate_fn == "laplace" else [-0.1, 1.1])
         ax.set_xlabel("Rank")
+        ax.grid()
 
     if animate:
         ani = animation.FuncAnimation(fig=fig, func=update, frames=range(len(all_vals) + 1), interval=anim_interval,
