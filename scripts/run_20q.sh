@@ -127,7 +127,7 @@ JOB_DESC=${desc}_${EXPERIMENT} && JOB_NAME=${JOB_DESC}_${RUN_ID} && \
       --surrogate_fn="${SURROGATE}" \
       --acquisition_fn="${ACQUISITION}" \
       --T=${STEPS} \
-      --out_dir="${OUT_DIR}"${WILDCARD:+" ${WILDCARD}"}
+      --out_dir="${OUT_DIR}"${WILDCARD:+ ${WILDCARD}}
 
 echo "Log path: ${job_dir}/${JOB_NAME}.log"
 echo "Output path: ${OUT_DIR}/${RUN_ID}
