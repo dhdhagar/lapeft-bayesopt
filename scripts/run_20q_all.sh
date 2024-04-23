@@ -2,10 +2,10 @@
 
 # Job defaults
 desc="20q"
-partition="gpu"
-n_gpus="1080ti:1"
-mem="100G"
-n_cpus="4"
+partition="gpu"  # gypsum-1080ti on Unity
+n_gpus="1"  # 1080ti:1 on Blake
+mem="20G"
+n_cpus="1"
 time="0-6:00:00"
 
 # Script defaults
