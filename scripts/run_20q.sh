@@ -39,6 +39,7 @@ N_INIT_DATA=5
 N_SEEDS=5
 STEPS=100
 WILDCARD=""
+OUTPUTS="outputs"
 
 # Parse arguments
 while [[ $# -gt 0 ]]; do
@@ -64,6 +65,7 @@ while [[ $# -gt 0 ]]; do
         --surrogate) SURROGATE="$2"; shift ;;
         --acquisition) ACQUISITION="$2"; shift ;;
         --wildcard) WILDCARD="$2"; shift ;;
+        --outputs) OUTPUTS="$2"; shift ;;
         *) echo "Invalid option: $1" >&2; exit 1 ;;
     esac
     shift
@@ -101,7 +103,7 @@ if [[ -n $WILDCARD ]]; then
 fi
 EXPERIMENT="${TEST_WORD}_${SURROGATE}_${ACQUISITION}_${MODEL}_${PROMPT}${HINT_LABEL}_${FEAT}${FEAT_LABEL}\
 _n${N_INIT_DATA}_t${STEPS}${WILDCARD_LABEL}"
-OUT_DIR="outputs/${desc}/${DATASET}/${EXPERIMENT}"
+OUT_DIR="${OUTPUTS}/${desc}/${DATASET}/${EXPERIMENT}"
 
 # Determine data_dir
 DATA_DIR="data/twentyquestions/datasets/${DATASET}"
