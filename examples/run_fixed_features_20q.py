@@ -469,6 +469,8 @@ def run_bayesopt(words, features, targets, test_word, n_init_data=10, T=None, se
         "feat_extraction_strategy": args.feat_extraction_strategy,
         "additive_features": args.additive_features,
         "model": args.model,
+        "surrogate_fn": args.surrogate_fn,
+        "acquisition_fn": args.acquisition_fn,
         "results": {
             "best_found": trace_best_x_label[-1],
             "best_y": trace_best_y[-1],
@@ -674,6 +676,8 @@ if __name__ == '__main__':
         "feat_extraction_strategy": args.feat_extraction_strategy,
         "additive_features": args.additive_features,
         "model": args.model,
+        "surrogate_fn": args.surrogate_fn,
+        "acquisition_fn": args.acquisition_fn,
         "avg_elapsed_time": round(elapsed_time / args.n_seeds, 2),
         "results": {
             "avg_rank": np.mean([res["results"]["best_rank"] for res in all_results]),
