@@ -638,6 +638,8 @@ if __name__ == '__main__':
     for k, v in final_res["results"].items():
         if type(v) is float:
             final_res["results"][k] = round(v, 2)
+        if k in ["avg_steps_to_opt", "avg_steps_to_opt_rand"]:
+            final_res["results"][k] = None if np.isnan(v) else v
 
     with open(os.path.join(out_dir, 'results.json'), 'w') as fh:
         fh.write(json.dumps(final_res, indent=2))
