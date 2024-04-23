@@ -38,6 +38,7 @@ ACQUISITION="thompson_sampling"
 N_INIT_DATA=5
 N_SEEDS=5
 STEPS=100
+WILDCARD=""
 
 # Parse arguments
 while [[ $# -gt 0 ]]; do
@@ -62,6 +63,7 @@ while [[ $# -gt 0 ]]; do
         --steps) STEPS="$2"; shift ;;
         --surrogate) SURROGATE="$2"; shift ;;
         --acquisition) ACQUISITION="$2"; shift ;;
+        --wildcard) WILDCARD="$2"; shift ;;
         *) echo "Invalid option: $1" >&2; exit 1 ;;
     esac
     shift
@@ -120,7 +122,7 @@ JOB_DESC=${desc}_${EXPERIMENT} && JOB_NAME=${JOB_DESC}_${RUN_ID} && \
       --surrogate_fn="${SURROGATE}" \
       --acquisition_fn="${ACQUISITION}" \
       --T=${STEPS} \
-      --out_dir="${OUT_DIR}"
+      --out_dir="${OUT_DIR}" ${WILDCARD}
 
 echo "Log path: ${job_dir}/${JOB_NAME}.log"
 echo "Output path: ${OUT_DIR}/${RUN_ID}
