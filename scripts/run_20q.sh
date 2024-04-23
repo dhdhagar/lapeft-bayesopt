@@ -20,6 +20,7 @@ split_and_join() {
 # Job defaults
 desc="20q"
 partition="gpu"  # gypsum-1080ti on Unity
+constraint=""
 n_gpus="1"  # 1080ti:1 on Blake
 mem="20G"
 n_cpus="1"
@@ -47,6 +48,7 @@ while [[ $# -gt 0 ]]; do
         # Job arguments
         --desc) desc="$2"; shift ;;
         --partition) partition="$2"; shift ;;
+        --constraint) constraint="$2"; shift ;;
         --n_gpus) n_gpus="$2"; shift ;;
         --n_cpus) n_cpus="$2"; shift ;;
         --mem) mem="$2"; shift ;;
@@ -114,8 +116,9 @@ RUN_ID="$(date +%s)"
 # Submit job
 JOB_DESC=${desc}_${EXPERIMENT} && JOB_NAME=${JOB_DESC}_${RUN_ID} && \
   sbatch -J ${JOB_NAME} -e ${job_dir}/${JOB_NAME}.err -o ${job_dir}/${JOB_NAME}.log \
-    --partition=${partition} --gres=gpu:${n_gpus} --cpus-per-task=${n_cpus} --mem=${mem} --time=${time} scripts/run_sbatch.sh \
-      examples/run_fixed_features_20q.py \
+    --partition=${partition}${constraint:+ --constraint ${constraint}} --gres=gpu:${n_gpus} --cpus-per-task=${n_cpus} \
+    --mem=${mem} --time=${time} \
+    scripts/run_sbatch.sh examples/run_fixed_features_20q.py \
       --run_id="${RUN_ID}" \
       --data_dir="${DATA_DIR}" \
       --dataset="${TEST_WORD}" \

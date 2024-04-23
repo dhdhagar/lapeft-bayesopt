@@ -3,6 +3,7 @@
 # Job defaults
 desc="20q"
 partition="gpu"  # gypsum-1080ti on Unity
+constraint=""
 n_gpus="1"  # 1080ti:1 on Blake
 mem="20G"
 n_cpus="1"
@@ -29,6 +30,7 @@ while [[ $# -gt 0 ]]; do
     case "$1" in
         # Job arguments
         --partition) partition="$2"; shift ;;
+        --constraint) constraint="$2"; shift ;;
         --n_gpus) n_gpus="$2"; shift ;;
         --n_cpus) n_cpus="$2"; shift ;;
         --mem) mem="$2"; shift ;;
