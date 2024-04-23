@@ -564,6 +564,8 @@ def plot_posterior(posterior_vals, obs_y, obs_y_rank, n_warm_start, path, animat
     ax.legend()
     ax.set_title(f"t = {len(all_vals) - 1 if not animate else 0}")
     ax.set_ylabel("Similarity")
+    # Set y limit to be the same for all frames
+    ax.set_ylim([-0.1, 1.1])
     ax.set_xlabel("Rank")
 
     def update(frame):
@@ -581,6 +583,8 @@ def plot_posterior(posterior_vals, obs_y, obs_y_rank, n_warm_start, path, animat
         ax.legend()
         ax.set_title(f"t = {frame}")
         ax.set_ylabel("Similarity")
+        # Set y limit to be the same for all frames
+        ax.set_ylim([-0.1, 1.1])
         ax.set_xlabel("Rank")
 
     if animate:
