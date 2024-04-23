@@ -94,8 +94,13 @@ if [[ $PROMPT == hint* ]]; then
 else
   HINT_LABEL=""
 fi
+# Create WILDCARD_LABEL
+WILDCARD_LABEL=""
+if [[ -n $WILDCARD ]]; then
+  WILDCARD_LABEL="_$(split_and_join "${WILDCARD}")"
+fi
 EXPERIMENT="${TEST_WORD}_${SURROGATE}_${ACQUISITION}_${MODEL}_${PROMPT}${HINT_LABEL}_${FEAT}${FEAT_LABEL}\
-_n${N_INIT_DATA}_t${STEPS}"
+_n${N_INIT_DATA}_t${STEPS}${WILDCARD_LABEL}"
 OUT_DIR="outputs/${desc}/${DATASET}/${EXPERIMENT}"
 
 # Determine data_dir
@@ -122,7 +127,7 @@ JOB_DESC=${desc}_${EXPERIMENT} && JOB_NAME=${JOB_DESC}_${RUN_ID} && \
       --surrogate_fn="${SURROGATE}" \
       --acquisition_fn="${ACQUISITION}" \
       --T=${STEPS} \
-      --out_dir="${OUT_DIR}" ${WILDCARD}
+      --out_dir="${OUT_DIR}"${WILDCARD:+" ${WILDCARD}"}
 
 echo "Log path: ${job_dir}/${JOB_NAME}.log"
 echo "Output path: ${OUT_DIR}/${RUN_ID}

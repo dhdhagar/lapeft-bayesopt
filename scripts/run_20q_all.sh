@@ -21,6 +21,7 @@ TEST_WORDS="computer"
 HINT="Hint: the hidden word is an example of a machine."  # Support for only one hint currently
 SURROGATES="laplace gp"
 ACQUISITIONS="thompson_sampling logEI"
+WILDCARD=""
 
 # Parse arguments
 while [[ $# -gt 0 ]]; do
@@ -44,6 +45,7 @@ while [[ $# -gt 0 ]]; do
         --steps) STEPS="$2"; shift ;;
         --surrogates) SURROGATES="$2"; shift ;;
         --acquisitions) ACQUISITIONS="$2"; shift ;;
+        --wildcard) WILDCARD="$2"; shift ;;
         *) echo "Invalid option: $1" >&2; exit 1 ;;
     esac
     shift
@@ -88,7 +90,7 @@ for DATASET in $DATASETS; do
                                             --mem $mem \
                                             --time $time \
                                             --surrogate $SURROGATE \
-                                            --acquisition $ACQUISITION
+                                            --acquisition $ACQUISITION${WILDCARD:+" --wildcard $WILDCARD"}
                                     done
                                 done
                             done
