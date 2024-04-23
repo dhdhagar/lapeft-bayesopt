@@ -563,7 +563,7 @@ def plot_posterior(posterior_vals, obs_y, obs_y_rank, n_warm_start, path, animat
     ax.fill_between(x, mean - std, mean + std, alpha=0.2, color="orange")
     ax.legend()
     ax.set_title(f"t = {len(all_vals) - 1 if not animate else 0}")
-    ax.set_ylabel("Similarity")
+    ax.set_ylabel("Objective")
     # Set y limit to be the same for all frames
     ax.set_ylim([-5, 5] if args.surrogate_fn == "laplace" else [-0.1, 1.1])
     ax.set_xlabel("Rank")
@@ -582,7 +582,7 @@ def plot_posterior(posterior_vals, obs_y, obs_y_rank, n_warm_start, path, animat
         ax.fill_between(x, mean - std, mean + std, alpha=0.2, color="orange")
         ax.legend()
         ax.set_title(f"t = {frame}")
-        ax.set_ylabel("Similarity")
+        ax.set_ylabel("Objective")
         # Set y limit to be the same for all frames
         ax.set_ylim([-5, 5] if args.surrogate_fn == "laplace" else [-0.1, 1.1])
         ax.set_xlabel("Rank")
