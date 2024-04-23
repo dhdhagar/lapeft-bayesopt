@@ -11,6 +11,7 @@ import torch.utils.data as data_utils
 import tqdm
 from sklearn.utils import shuffle as skshuffle
 import matplotlib.pyplot as plt
+import matplotlib.animation as animation
 from torch.nn.functional import cosine_similarity
 
 # Non-finetuned surrogates. The finetuned surrogates are in lapeft_bayesopt.surrogates
