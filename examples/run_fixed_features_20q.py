@@ -582,7 +582,7 @@ def plot_posterior(posterior_vals, obs_y, obs_y_rank, n_warm_start, path, animat
         ax.set_xlabel("Rank")
 
     if animate:
-        ani = animation.FuncAnimation(fig=fig, func=update, frames=range(t + 1), interval=anim_interval,
+        ani = animation.FuncAnimation(fig=fig, func=update, frames=range(len(all_vals) + 1), interval=anim_interval,
                                       repeat=anim_repeat, repeat_delay=50)
         ani.save(path.replace(".json", ".gif"), writer="imagemagick")
     else:
