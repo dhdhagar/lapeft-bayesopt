@@ -73,6 +73,11 @@ while [[ $# -gt 0 ]]; do
     shift
 done
 
+# If partition is "none", don't specify partition
+if [[ $partition == "none" ]]; then
+    partition=""
+fi
+
 # Echo all job arguments in one line
 echo "
 Job arguments: desc=${desc}, partition=${partition}, n_gpus=${n_gpus}, mem=${mem}, time=${time}"
@@ -116,7 +121,7 @@ RUN_ID="$(date +%s)"
 # Submit job
 JOB_DESC=${desc}_${EXPERIMENT} && JOB_NAME=${JOB_DESC}_${RUN_ID} && \
   sbatch -J ${JOB_NAME} -e ${job_dir}/${JOB_NAME}.err -o ${job_dir}/${JOB_NAME}.log \
-    --partition="${partition}"${constraint:+ --constraint "${constraint}"} --gres=gpu:${n_gpus} --cpus-per-task=${n_cpus} \
+    ${partition:+--partition="${partition}" }${constraint:+--constraint="${constraint}" }--gres=gpu:${n_gpus} --cpus-per-task=${n_cpus} \
     --mem=${mem} --time=${time} \
     scripts/run_sbatch.sh examples/run_fixed_features_20q.py \
       --run_id="${RUN_ID}" \
