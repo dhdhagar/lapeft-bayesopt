@@ -96,6 +96,9 @@ class Parser(argparse.ArgumentParser):
             "--visualize_posterior", action=argparse.BooleanOptionalAction, default=False
         )
         self.add_argument(
+            "--visualize_posterior_anim", action=argparse.BooleanOptionalAction, default=True
+        )
+        self.add_argument(
             "--reset_cache", action=argparse.BooleanOptionalAction, default=False
         )
         self.add_argument(
@@ -398,8 +401,6 @@ def run_bayesopt(words, features, targets, test_word, n_init_data=10, T=None, se
                             (y.to(device), posterior.mean.squeeze(), posterior.variance.sqrt().squeeze()), dim=-1))
                 f_vals = torch.cat(f_vals, dim=0).tolist()
                 posterior_vals[t] = f_vals
-                with open(os.path.join(out_dir, f'posterior_vals_seed{seed}.json'), 'w') as fh:
-                    fh.write(json.dumps(posterior_vals, indent=2))
 
             # Update surrogate posterior with the newly acquired (x, y)
             surrogate = surrogate.condition_on_observations(new_x.reshape(1, -1).to(device),
@@ -447,6 +448,14 @@ def run_bayesopt(words, features, targets, test_word, n_init_data=10, T=None, se
             f'Hidden word ("{test_word}") not found. Best found: f(x="{best_x_label}") = {round(best_y, 3)} (rank={best_rank}).')
     print(
         f'Best found by random search: f(x="{trace_best_x_label_rand[-1]}") = {round(trace_best_y_rand[-1], 3)} (rank={trace_best_rank_rand[-1]}).')
+
+    if args.visualize_posterior:
+        posterior_path = os.path.join(out_dir, f'posterior_seed{seed}.json')
+        plot_posterior(posterior_vals=posterior_vals, obs_y=trace_y, obs_y_rank=trace_rank, n_warm_start=n_init_data,
+                       animate=args.visualize_posterior_anim, anim_interval=300, anim_repeat=True, hide_optim=False,
+                       path=posterior_path)
+        with open(posterior_path, 'w') as fh:
+            fh.write(json.dumps(posterior_vals, indent=2))
 
     return {
         "target": test_word,
@@ -534,6 +543,49 @@ def plot(results, aggregate=False):
         plt.title(f'{title_experiment}\n' + fr'$\bf{{{title_result}}}$', wrap=True)
         plt.savefig(os.path.join(out_dir, f'aggregate.png'), bbox_inches="tight")
         print(f'Saved final plot at ' + os.path.join(out_dir, f'aggregate.png'))
+
+
+def plot_posterior(posterior_vals, obs_y, obs_y_rank, n_warm_start, path, animate=False, anim_interval=300,
+                   anim_repeat=True, hide_optim=False):
+    all_vals = np.array([posterior_vals[k] for k in posterior_vals])
+    plt.clf()
+    fig, ax = plt.subplots()
+    vals = all_vals[len(all_vals) - 1 if not animate else 0]  # Last posterior values if not animating
+    vals = vals[(1 if hide_optim else 0):, :]  # Option to exclude optimal value for visualization
+    y, mean, std = vals[:, 0], vals[:, 1], vals[:, 2]
+    x = 1 + np.arange(len(y))  # Rank of the words
+    ax.plot(x, y, label="True")
+    ax.plot(x, mean, label="Posterior", color="orange")
+    ax.scatter(obs_y_rank[:n_warm_start], obs_y[:n_warm_start], label="Warm-start", color="gray")
+    ax.fill_between(x, mean - std, mean + std, alpha=0.2, color="orange")
+    ax.legend()
+    ax.set_title(f"t = {len(all_vals) - 1 if not animate else 0}")
+    ax.set_ylabel("Similarity")
+    ax.set_xlabel("Rank")
+
+    def update(frame):
+        ax.clear()
+        vals = all_vals[frame if frame < len(all_vals) else (frame - 1)]
+        vals = vals[(1 if hide_optim else 0):, :]
+        y, mean, std = vals[:, 0], vals[:, 1], vals[:, 2]
+        x = 1 + np.arange(len(y))
+        ax.plot(x, y, label="True")
+        ax.plot(x, mean, label="Posterior", color="orange")
+        ax.scatter(obs_y_rank[:n_warm_start], obs_y[:n_warm_start], label="Warm-start", color="gray")
+        ax.scatter(obs_y_rank[n_warm_start + 1:n_warm_start + frame], obs_y[n_warm_start + 1:n_warm_start + frame],
+                   label="BO Observation", color="red")
+        ax.fill_between(x, mean - std, mean + std, alpha=0.2, color="orange")
+        ax.legend()
+        ax.set_title(f"t = {frame}")
+        ax.set_ylabel("Similarity")
+        ax.set_xlabel("Rank")
+
+    if animate:
+        ani = animation.FuncAnimation(fig=fig, func=update, frames=range(t + 1), interval=anim_interval,
+                                      repeat=anim_repeat, repeat_delay=50)
+        ani.save(path.replace(".json", ".gif"), writer="imagemagick")
+    else:
+        plt.savefig(path.replace(".json", ".png"), bbox_inches="tight")
 
 
 if __name__ == '__main__':
