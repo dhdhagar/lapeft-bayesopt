@@ -75,7 +75,7 @@ Job arguments: desc=${desc}, partition=${partition}, n_gpus=${n_gpus}, mem=${mem
 # Echo all script arguments in one line
 echo "Script arguments: dataset=${DATASET}, test_word=${TEST_WORD}, n_init_data=${N_INIT_DATA}, n_seeds=${N_SEEDS}, \
 model=${MODEL}, prompt=${PROMPT}, hint="${HINT}", feat=${FEAT}, feat_type=${FEAT_TYPE}, steps=${STEPS}, \
-surrogate=${SURROGATE}, acquisition=${ACQUISITION}"
+surrogate=${SURROGATE}, acquisition=${ACQUISITION}${WILDCARD:+", wildcard=${WILDCARD}"}"
 
 # Create log directory for the job
 job_dir="jobs/${desc}"
