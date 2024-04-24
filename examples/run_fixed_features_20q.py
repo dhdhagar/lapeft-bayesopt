@@ -306,8 +306,8 @@ def optimize_acqf_and_get_observation(acq_fn, features, unseen_idxs, device):
             ]
         ),
         q=1,
-        num_restarts=3,
-        raw_samples=5,
+        num_restarts=10,
+        raw_samples=256,
     )
 
     # observe new values
