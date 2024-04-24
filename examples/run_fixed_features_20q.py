@@ -80,6 +80,9 @@ class Parser(argparse.ArgumentParser):
             "--optimize_acq", action=argparse.BooleanOptionalAction, default=False
         )
         self.add_argument(
+            "--optimize_acq_unbounded", action=argparse.BooleanOptionalAction, default=False
+        )
+        self.add_argument(
             "--cuda", action=argparse.BooleanOptionalAction, default=True
         )
         self.add_argument(
@@ -300,13 +303,13 @@ def optimize_acqf_and_get_observation(acq_fn, features, unseen_idxs, device):
     candidates, _ = optimize_acqf(
         acq_function=acq_fn,
         bounds=torch.stack(
-            [
-                # torch.ones(features.shape[1], device=device) * -float("1000"),
-                # torch.ones(features.shape[1], device=device) * float("1000"),
-                # features.min(dim=0).values.to(device),
-                # features.max(dim=0).values.to(device),
+            [  # Restrict to the min-max range of the LLM activation function
                 torch.ones(features.shape[1], device=device) * -1.,
-                torch.ones(features.shape[1], device=device) * 1.,
+                torch.ones(features.shape[1], device=device) * 1.
+            ] if args.optimize_acq_unbounded else
+            [  # Restrict to the min-max range of the candidate set features
+                features.min(dim=0).values.to(device),
+                features.max(dim=0).values.to(device),
             ]
         ),
         q=1,
