@@ -301,8 +301,8 @@ def optimize_acqf_and_get_observation(acq_fn, features, unseen_idxs):
         acq_function=acq_fn,
         bounds=torch.stack(
             [
-                torch.full(d, -float("inf"), device=device),
-                torch.full(d, float("inf"), device=device),
+                torch.full(features.shape[1], -float("inf"), device=device),
+                torch.full(features.shape[1], float("inf"), device=device),
             ]
         ),
         q=1,
