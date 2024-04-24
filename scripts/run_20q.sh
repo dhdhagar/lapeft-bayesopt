@@ -36,6 +36,7 @@ FEAT_TYPE="no-additive_features"
 TEST_WORD="computer"
 SURROGATE="laplace"
 ACQUISITION="thompson_sampling"
+ACQ_OPTIM="evaluate"  # evaluate optimize_unbounded optimize_bounded
 N_INIT_DATA=5
 N_SEEDS=5
 STEPS=100
@@ -66,6 +67,7 @@ while [[ $# -gt 0 ]]; do
         --steps) STEPS="$2"; shift ;;
         --surrogate) SURROGATE="$2"; shift ;;
         --acquisition) ACQUISITION="$2"; shift ;;
+        --acq_optim) ACQ_OPTIM="$2"; shift ;;
         --wildcard) WILDCARD="$2"; shift ;;
         --outputs) OUTPUTS="$2"; shift ;;
         *) echo "Invalid option: $1" >&2; exit 1 ;;
@@ -78,13 +80,23 @@ if [[ $partition == "none" ]]; then
     partition=""
 fi
 
+# If acq_optim="evaluate"=>"", acq_optim="optimize_unbounded"=>"--optimize_acq --optimize_acq_unbounded",
+# acq_optim="optimize_bounded"=>"--optimize_acq"
+if [[ $ACQ_OPTIM == "evaluate" ]]; then
+  ACQ_OPTIM_FLAG=""
+elif [[ $ACQ_OPTIM == "optimize_unbounded" ]]; then
+  ACQ_OPTIM_FLAG="--optimize_acq --optimize_acq_unbounded"
+elif [[ $ACQ_OPTIM == "optimize_bounded" ]]; then
+  ACQ_OPTIM_FLAG="--optimize_acq"
+fi
+
 # Echo all job arguments in one line
 echo "
 Job arguments: desc=${desc}, partition=${partition}, n_gpus=${n_gpus}, mem=${mem}, time=${time}"
 # Echo all script arguments in one line
 echo "Script arguments: dataset=${DATASET}, test_word=${TEST_WORD}, n_init_data=${N_INIT_DATA}, n_seeds=${N_SEEDS}, \
 model=${MODEL}, prompt=${PROMPT}, hint="${HINT}", feat=${FEAT}, feat_type=${FEAT_TYPE}, steps=${STEPS}, \
-surrogate=${SURROGATE}, acquisition=${ACQUISITION}${WILDCARD:+", wildcard=${WILDCARD}"}"
+surrogate=${SURROGATE}, acquisition=${ACQUISITION}, acq_optim=${ACQ_OPTIM}${WILDCARD:+", wildcard=${WILDCARD}"}"
 
 # Create log directory for the job
 job_dir="jobs/${desc}"
@@ -108,7 +120,7 @@ WILDCARD_LABEL=""
 if [[ -n $WILDCARD ]]; then
   WILDCARD_LABEL="_$(split_and_join "${WILDCARD}")"
 fi
-EXPERIMENT="${TEST_WORD}_${SURROGATE}_${ACQUISITION}_${MODEL}_${PROMPT}${HINT_LABEL}_${FEAT}${FEAT_LABEL}\
+EXPERIMENT="${TEST_WORD}_${SURROGATE}_${ACQUISITION}-${ACQ_OPTIM}_${MODEL}_${PROMPT}${HINT_LABEL}_${FEAT}${FEAT_LABEL}\
 _n${N_INIT_DATA}_t${STEPS}${WILDCARD_LABEL}"
 OUT_DIR="${OUTPUTS}/${desc}/${DATASET}/${EXPERIMENT}"
 
@@ -137,7 +149,7 @@ JOB_DESC=${desc}_${EXPERIMENT} && JOB_NAME=${JOB_DESC}_${RUN_ID} && \
       --surrogate_fn="${SURROGATE}" \
       --acquisition_fn="${ACQUISITION}" \
       --T=${STEPS} \
-      --out_dir="${OUT_DIR}"${WILDCARD:+ ${WILDCARD}}
+      --out_dir="${OUT_DIR}"${ACQ_OPTIM_FLAG:+ ${ACQ_OPTIM_FLAG}}${WILDCARD:+ ${WILDCARD}}
 
 echo "Log path: ${job_dir}/${JOB_NAME}.log"
 echo "Output path: ${OUT_DIR}/${RUN_ID}

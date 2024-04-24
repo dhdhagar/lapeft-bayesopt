@@ -514,6 +514,8 @@ def run_bayesopt(words, features, targets, test_word, n_init_data=10, T=None, se
         "model": args.model,
         "surrogate_fn": args.surrogate_fn,
         "acquisition_fn": args.acquisition_fn,
+        "acq_optimization": "evaluate" if not args.optimize_acq \
+            else f"optimize_{'unbounded' if args.optimize_acq_unbounded else 'bounded'}",
         "results": {
             "best_found": trace_best_x_label[-1],
             "best_y": trace_best_y[-1],
@@ -735,6 +737,8 @@ if __name__ == '__main__':
         "model": args.model,
         "surrogate_fn": args.surrogate_fn,
         "acquisition_fn": args.acquisition_fn,
+        "acq_optimization": "evaluate" if not args.optimize_acq \
+            else f"optimize_{'unbounded' if args.optimize_acq_unbounded else 'bounded'}",
         "avg_elapsed_time": round(elapsed_time / args.n_seeds, 2),
         "results": {
             "avg_rank": np.mean([res["results"]["best_rank"] for res in all_results]),

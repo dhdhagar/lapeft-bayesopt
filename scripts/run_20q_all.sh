@@ -22,6 +22,7 @@ TEST_WORDS="computer"
 HINT="Hint: the hidden word is an example of a machine."  # Support for only one hint currently
 SURROGATES="laplace gp"
 ACQUISITIONS="thompson_sampling logEI"
+ACQ_OPTIMS="evaluate optimize_unbounded optimize_bounded"
 WILDCARD=""
 OUTPUTS=""
 
@@ -48,6 +49,7 @@ while [[ $# -gt 0 ]]; do
         --steps) STEPS="$2"; shift ;;
         --surrogates) SURROGATES="$2"; shift ;;
         --acquisitions) ACQUISITIONS="$2"; shift ;;
+        --acq_optims) ACQ_OPTIMS="$2"; shift ;;
         --wildcard) WILDCARD="$2"; shift ;;
         --outputs) OUTPUTS="$2"; shift ;;
         *) echo "Invalid option: $1" >&2; exit 1 ;;
@@ -59,42 +61,45 @@ for DATASET in $DATASETS; do
     for TEST_WORD in $TEST_WORDS; do
         for SURROGATE in $SURROGATES; do
             for ACQUISITION in $ACQUISITIONS; do
-                for MODEL in $MODELS; do
-                    for PROMPT in $PROMPTS; do
-                        for FEAT in $FEATS; do
-                            # Don't run if aggregation is first-token for llama models
-                            if [[ $MODEL == llama* ]]; then
-                                if [[ $FEAT == "first-token" ]]; then
-                                    echo "Skipping first-token feature extraction for llama models."
-                                    continue
+                for ACQ_OPTIM in $ACQ_OPTIMS; do
+                    for MODEL in $MODELS; do
+                        for PROMPT in $PROMPTS; do
+                            for FEAT in $FEATS; do
+                                # Don't run if aggregation is first-token for llama models
+                                if [[ $MODEL == llama* ]]; then
+                                    if [[ $FEAT == "first-token" ]]; then
+                                        echo "Skipping first-token feature extraction for llama models."
+                                        continue
+                                    fi
                                 fi
-                            fi
-                            for FEAT_TYPE in $FEAT_TYPES; do
-                                # Skip if feat type is additive and prompt is word
-                                if [[ $FEAT_TYPE == "additive_features" && $PROMPT == "word" ]]; then
-                                    echo "Skipping additive features with word prompt."
-                                    continue
-                                fi
-                                for N_INIT_DATA in $N_INIT_DATAS; do
-                                    for STEP in $STEPS; do
-                                        ./scripts/run_20q.sh \
-                                            --dataset $DATASET \
-                                            --test_word $TEST_WORD \
-                                            --n_init_data $N_INIT_DATA \
-                                            --n_seeds $N_SEEDS \
-                                            --model $MODEL \
-                                            --prompt $PROMPT \
-                                            --hint "$HINT" \
-                                            --feat $FEAT \
-                                            --feat_type $FEAT_TYPE \
-                                            --steps $STEP \
-                                            --partition $partition \
-                                            --n_gpus $n_gpus \
-                                            --n_cpus $n_cpus \
-                                            --mem $mem \
-                                            --time $time \
-                                            --surrogate $SURROGATE \
-                                            --acquisition $ACQUISITION${WILDCARD:+ --wildcard $WILDCARD}${OUTPUTS:+ --outputs $OUTPUTS}
+                                for FEAT_TYPE in $FEAT_TYPES; do
+                                    # Skip if feat type is additive and prompt is word
+                                    if [[ $FEAT_TYPE == "additive_features" && $PROMPT == "word" ]]; then
+                                        echo "Skipping additive features with word prompt."
+                                        continue
+                                    fi
+                                    for N_INIT_DATA in $N_INIT_DATAS; do
+                                        for STEP in $STEPS; do
+                                            ./scripts/run_20q.sh \
+                                                --dataset $DATASET \
+                                                --test_word $TEST_WORD \
+                                                --n_init_data $N_INIT_DATA \
+                                                --n_seeds $N_SEEDS \
+                                                --model $MODEL \
+                                                --prompt $PROMPT \
+                                                --hint "$HINT" \
+                                                --feat $FEAT \
+                                                --feat_type $FEAT_TYPE \
+                                                --steps $STEP \
+                                                --partition $partition \
+                                                --n_gpus $n_gpus \
+                                                --n_cpus $n_cpus \
+                                                --mem $mem \
+                                                --time $time \
+                                                --surrogate $SURROGATE \
+                                                --acquisition $ACQUISITION \
+                                                --acq_optim $ACQ_OPTIM${WILDCARD:+ --wildcard $WILDCARD}${OUTPUTS:+ --outputs $OUTPUTS}
+                                        done
                                     done
                                 done
                             done
