@@ -301,15 +301,21 @@ def optimize_acqf_and_get_observation(acq_fn, features, unseen_idxs, device):
         acq_function=acq_fn,
         bounds=torch.stack(
             [
-                # torch.ones(features.shape[1], device=device) * -float("1000"),  # inf
+                # torch.ones(features.shape[1], device=device) * -float("1000"),
                 # torch.ones(features.shape[1], device=device) * float("1000"),
-                features.min(dim=0).values.to(device),
-                features.max(dim=0).values.to(device),
+                # features.min(dim=0).values.to(device),
+                # features.max(dim=0).values.to(device),
+                torch.ones(features.shape[1], device=device) * -float('inf'),
+                torch.ones(features.shape[1], device=device) * float('inf'),
             ]
         ),
+        inequality_constraints=[(torch.tensor([i]), torch.tensor([1.0]), -float('inf')) for i in
+                                range(features.shape[1])] + \
+                               [(torch.tensor([i]), torch.tensor([-1.0]), -float('inf')) for i in
+                                range(features.shape[1])],
         q=1,
-        num_restarts=10,
-        raw_samples=256,
+        num_restarts=1,
+        raw_samples=5,
     )
 
     # observe new values
