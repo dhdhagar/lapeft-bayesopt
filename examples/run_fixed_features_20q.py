@@ -292,7 +292,7 @@ def get_surrogate(train_x, train_y, n_objs=1, standardize=True, device='cpu',
     return model.to(device)
 
 
-def optimize_acqf_and_get_observation(acq_fn, features, unseen_idxs):
+def optimize_acqf_and_get_observation(acq_fn, features, unseen_idxs, device):
     """Optimizes the acquisition function, and returns a
     new candidate and a noisy observation"""
 
@@ -390,7 +390,7 @@ def run_bayesopt(words, features, targets, test_word, n_init_data=10, T=None, se
             }[args.acquisition_fn]
             if args.optimize_acq:
                 # Optimize acquisition function
-                idx_best = optimize_acqf_and_get_observation(acq_fn, features, unseen_idxs)
+                idx_best = optimize_acqf_and_get_observation(acq_fn, features, unseen_idxs, device=device)
             else:
                 # Perform finite-set search
                 dataloader = data_utils.DataLoader(
