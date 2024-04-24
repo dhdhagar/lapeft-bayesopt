@@ -314,7 +314,7 @@ def optimize_acqf_and_get_observation(acq_fn, features, unseen_idxs, device):
     # new_x = unnormalize(candidates.detach(), bounds=bounds)
     candidates = candidates.detach()
     # Find idx of vector in features that is closest to the candidate
-    dists = torch.cdist(features[unseen_idxs], candidates)
+    dists = torch.cdist(features[unseen_idxs].to(device), candidates)
     _idx_best = dists.min(dim=0).indices.item()
     idx_best = unseen_idxs[_idx_best]
     return idx_best
