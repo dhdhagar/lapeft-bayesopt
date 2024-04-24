@@ -31,6 +31,8 @@ from botorch.models.transforms.outcome import Standardize
 from gpytorch.mlls.exact_marginal_log_likelihood import ExactMarginalLogLikelihood
 from botorch.acquisition.analytic import LogExpectedImprovement
 from botorch import fit_gpytorch_mll
+from botorch.optim import optimize_acqf
+from botorch.utils.transforms import unnormalize
 
 
 class Parser(argparse.ArgumentParser):
@@ -74,6 +76,9 @@ class Parser(argparse.ArgumentParser):
         self.add_argument(
             "--acquisition_fn", type=str, choices=['thompson_sampling', 'logEI'], default="thompson_sampling"
         )  # 'ucb', 'ei',
+        self.add_argument(
+            "--optimize_acq", action=argparse.BooleanOptionalAction, default=False
+        )
         self.add_argument(
             "--cuda", action=argparse.BooleanOptionalAction, default=True
         )
@@ -287,6 +292,34 @@ def get_surrogate(train_x, train_y, n_objs=1, standardize=True, device='cpu',
     return model.to(device)
 
 
+def optimize_acqf_and_get_observation(acq_fn, features, unseen_idxs):
+    """Optimizes the acquisition function, and returns a
+    new candidate and a noisy observation"""
+
+    # optimize
+    candidates, _ = optimize_acqf(
+        acq_function=acq_fn,
+        bounds=torch.stack(
+            [
+                torch.full(d, -float("inf"), device=device),
+                torch.full(d, float("inf"), device=device),
+            ]
+        ),
+        q=1,
+        num_restarts=3,
+        raw_samples=5,
+    )
+
+    # observe new values
+    # new_x = unnormalize(candidates.detach(), bounds=bounds)
+    candidates = candidates.detach()
+    # Find idx of vector in features that is closest to the candidate
+    dists = torch.cdist(features[unseen_idxs], candidates)
+    _idx_best = dists.min(dim=0).indices.item()
+    idx_best = unseen_idxs[_idx_best]
+    return idx_best
+
+
 def run_bayesopt(words, features, targets, test_word, n_init_data=10, T=None, seed=17, device='cpu'):
     np.random.seed(seed)
     torch.manual_seed(seed)
@@ -351,26 +384,29 @@ def run_bayesopt(words, features, targets, test_word, n_init_data=10, T=None, se
     for t in pbar:
         if not bo_found:
             unseen_idxs = list(set(range(len(features))) - seen_idxs)
-            dataloader = data_utils.DataLoader(
-                data_utils.TensorDataset(features[unseen_idxs], targets[unseen_idxs]),
-                batch_size=256, shuffle=False
-            )
-
-            # Make surrogate predictions over all candidates,
-            # then use the predictive mean and variance to compute the acquisition function values
-            acq_vals = []
             acq_fn = {
                 "logEI": LogExpectedImprovement(model=surrogate, best_f=best_y),
                 "thompson_sampling": ThompsonSampling(model=surrogate),
             }[args.acquisition_fn]
-            for x, y in dataloader:
-                with torch.no_grad():
-                    acq_vals.append(acq_fn(x.to(device).unsqueeze(1)).squeeze())
-
-            # Pick the candidate that maximizes the acquisition fn and update seen idxs
-            acq_vals = torch.cat(acq_vals, dim=0).cpu()
-            _idx_best = torch.argmax(acq_vals).item()
-            idx_best = unseen_idxs[_idx_best]
+            if args.optimize_acq:
+                # Optimize acquisition function
+                idx_best = optimize_acqf_and_get_observation(acq_fn, features, unseen_idxs)
+            else:
+                # Perform finite-set search
+                dataloader = data_utils.DataLoader(
+                    data_utils.TensorDataset(features[unseen_idxs], targets[unseen_idxs]),
+                    batch_size=256, shuffle=False
+                )
+                # Make surrogate predictions over all candidates,
+                # then use the predictive mean and variance to compute the acquisition function values
+                acq_vals = []
+                for x, y in dataloader:
+                    with torch.no_grad():
+                        acq_vals.append(acq_fn(x.to(device).unsqueeze(1)).squeeze())
+                # Pick the candidate that maximizes the acquisition fn and update seen idxs
+                acq_vals = torch.cat(acq_vals, dim=0).cpu()
+                _idx_best = torch.argmax(acq_vals).item()
+                idx_best = unseen_idxs[_idx_best]
             seen_idxs.add(idx_best)  # Add to seen idxs
             # Observe true value of selected candidate
             new_x, new_y = features[idx_best], targets[idx_best]

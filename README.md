@@ -10,6 +10,10 @@ pip install gensim
 pip install git+https://git@github.com/wiseodd/laplace-bayesopt
 ```
 
+```shell
+pip install sentencepiece
+```
+
 ---
 
 # `lapeft-bayesopt`: Discrete Bayesian Optimization with LLM + PEFT + Laplace Approximation
