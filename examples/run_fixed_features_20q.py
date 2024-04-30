@@ -71,10 +71,10 @@ class Parser(argparse.ArgumentParser):
             "--init_strategy", type=str, choices=['random'], default="random"
         )
         self.add_argument(
-            "--surrogate_fn", type=str, choices=['laplace', 'gp'], default="laplace"
+            "--surrogate_fn", type=str, choices=['laplace', 'gp'], default="gp"
         )
         self.add_argument(
-            "--acquisition_fn", type=str, choices=['thompson_sampling', 'logEI'], default="thompson_sampling"
+            "--acquisition_fn", type=str, choices=['thompson_sampling', 'logEI', 'random'], default="logEI"
         )  # 'ucb', 'ei',
         self.add_argument(
             "--optimize_acq", action=argparse.BooleanOptionalAction, default=False
@@ -299,6 +299,10 @@ def optimize_acqf_and_get_observation(acq_fn, features, unseen_idxs, device):
     """Optimizes the acquisition function, and returns a
     new candidate and a noisy observation"""
 
+    if acq_fn is None:
+        # Randomly sample from the unseen indices
+        return np.random.choice(unseen_idxs)
+
     # optimize
     candidates, _ = optimize_acqf(
         acq_function=acq_fn,
@@ -394,6 +398,7 @@ def run_bayesopt(words, features, targets, test_word, n_init_data=10, T=None, se
             acq_fn = {
                 "logEI": LogExpectedImprovement(model=surrogate, best_f=best_y),
                 "thompson_sampling": ThompsonSampling(model=surrogate),
+                "random": None
             }[args.acquisition_fn]
             if args.optimize_acq:
                 # Optimize acquisition function
