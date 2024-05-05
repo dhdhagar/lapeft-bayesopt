@@ -71,7 +71,7 @@ class CustomEarlyStoppingCallback(EarlyStoppingCallback):
             control.should_training_stop = True
 
 
-def create_trainer(model, training_args, dataset, schedule_free=False, _type="seq2seq"):
+def create_trainer(model, tokenizer, training_args, dataset, schedule_free=False, _type="seq2seq"):
     add_args = {}
     if schedule_free:
         optimizer = schedulefree.AdamWScheduleFree(
@@ -126,7 +126,7 @@ def get_virtual_token(feature_extractor, tokenizer, data, out_dir, num_virtual_t
     training_args = create_training_arguments(learning_rate=learning_rate * (4 if model_name.startswith('t5') else 1),
                                               epochs=epochs, out_dir=out_dir, device=device)
     # Get trainer
-    trainer = create_trainer(model=peft_model, training_args=training_args, dataset=hf_dataset,
+    trainer = create_trainer(model=peft_model, tokenizer=tokenizer, training_args=training_args, dataset=hf_dataset,
                              schedule_free=schedule_free, _type="seq2seq" if model_name.startswith('t5') else "causal")
     # Run training
     trainer.train()
