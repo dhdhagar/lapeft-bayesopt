@@ -229,8 +229,7 @@ def load_features(dataset, test_word, test_idx):
         for data in pbar:
             if is_vtoken_feat_extraction:
                 # Backpropagate through the LLM to learn features as virtual tokens
-                feat = get_virtual_token(llm_feat_extractor.feature_extractor, tokenizer, data,
-                                         device='cuda' if args.cuda else 'cpu')
+                feat = get_virtual_token(llm_feat_extractor, tokenizer, data, device='cuda' if args.cuda else 'cpu')
             else:
                 # Forward pass through the LLM, take the aggregate (over sequence dimension)
                 # of the last hidden state

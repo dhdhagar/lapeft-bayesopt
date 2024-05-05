@@ -104,9 +104,9 @@ def create_trainer(model, training_args, dataset, schedule_free=False, _type="se
     return trainer
 
 
-def get_virtual_token(foundational_model, tokenizer, data, num_virtual_tokens=1,
+def get_virtual_token(feature_extractor, tokenizer, data, num_virtual_tokens=1,
                       learning_rate=30, epochs=200, schedule_free=True, device='cuda'):
-    model_name = foundational_model.kind
+    model_name = feature_extractor.kind
     hf_dataset = get_tokenized_dataset(data, tokenizer, _type="seq2seq" if model_name.startswith('t5') else "causal")
 
     # Load peft model
@@ -118,7 +118,7 @@ def get_virtual_token(foundational_model, tokenizer, data, num_virtual_tokens=1,
         tokenizer_name_or_path=model_name,  # pre-trained model name
         num_transformer_submodules=1  # Force the vtoken to be added at the encoder only for encoder-decoder models
     )
-    peft_model = get_peft_model(foundational_model, generation_config)
+    peft_model = get_peft_model(feature_extractor.feature_extractor, generation_config)
     # print(peft_model.print_trainable_parameters())
 
     # Get training args
