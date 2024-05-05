@@ -76,7 +76,7 @@ class CustomEarlyStoppingCallback(EarlyStoppingCallback):
 
 class CustomProgressCallback(ProgressCallback):
     def __init__(self):
-        super(self)
+        super()
     def on_train_begin(self, args, state, control, **kwargs):
         pass
     def on_step_end(self, args, state, control, **kwargs):
