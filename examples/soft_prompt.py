@@ -43,18 +43,19 @@ def get_tokenized_dataset(data, tokenizer, _type="seq2seq"):
     return hf_dataset
 
 
-def create_training_arguments(learning_rate=30, epochs=200, device='cuda'):
+def create_training_arguments(out_dir, learning_rate=30, epochs=200, device='cuda'):
+    os.makedirs(os.path.join(out_dir, 'temp'), exist_ok=True)
     training_args = TrainingArguments(
-        # output_dir=path,
+        output_dir=os.path.join(out_dir, 'temp'),
         use_cpu=device == 'cpu',
         auto_find_batch_size=True,
         learning_rate=learning_rate,
         num_train_epochs=epochs,
-        # logging_steps=epochs // 10,
+        logging_steps=epochs // 10,
         eval_steps=epochs // 10,
         metric_for_best_model='accuracy',
         load_best_model_at_end=True,
-        # save_strategy=IntervalStrategy.STEPS,
+        save_strategy=IntervalStrategy.STEPS,
         evaluation_strategy=IntervalStrategy.STEPS
     )
     return training_args
@@ -104,7 +105,7 @@ def create_trainer(model, training_args, dataset, schedule_free=False, _type="se
     return trainer
 
 
-def get_virtual_token(feature_extractor, tokenizer, data, num_virtual_tokens=1,
+def get_virtual_token(feature_extractor, tokenizer, data, out_dir, num_virtual_tokens=1,
                       learning_rate=30, epochs=200, schedule_free=True, device='cuda'):
     model_name = feature_extractor.kind
     hf_dataset = get_tokenized_dataset(data, tokenizer, _type="seq2seq" if model_name.startswith('t5') else "causal")
@@ -123,7 +124,7 @@ def get_virtual_token(feature_extractor, tokenizer, data, num_virtual_tokens=1,
 
     # Get training args
     training_args = create_training_arguments(learning_rate=learning_rate * (4 if model_name.startswith('t5') else 1),
-                                              epochs=epochs, device=device)
+                                              epochs=epochs, out_dir=out_dir, device=device)
     # Get trainer
     trainer = create_trainer(model=peft_model, training_args=training_args, dataset=hf_dataset,
                              schedule_free=schedule_free, _type="seq2seq" if model_name.startswith('t5') else "causal")
