@@ -45,7 +45,7 @@ def get_tokenized_dataset(data, tokenizer, _type="seq2seq"):
     return hf_dataset
 
 
-def create_training_arguments(out_dir, learning_rate=30, epochs=1000, device='cuda'):
+def create_training_arguments(out_dir, learning_rate, epochs, device='cuda'):
     os.makedirs(os.path.join(out_dir, 'temp'), exist_ok=True)
     training_args = TrainingArguments(
         output_dir=os.path.join(out_dir, 'temp'),
@@ -118,7 +118,7 @@ def create_trainer(model, tokenizer, training_args, dataset, schedule_free=False
         train_dataset=dataset,
         eval_dataset=dataset,
         data_collator=data_collator,
-        callbacks=[CustomEarlyStoppingCallback(), CustomProgressCallback()],
+        callbacks=[CustomEarlyStoppingCallback()],  # , CustomProgressCallback()],
         compute_metrics=compute_metrics,
         **add_args
     )
@@ -126,7 +126,7 @@ def create_trainer(model, tokenizer, training_args, dataset, schedule_free=False
 
 
 def get_virtual_token(feature_extractor, tokenizer, data, out_dir, num_virtual_tokens=1,
-                      learning_rate=30, epochs=200, schedule_free=True, device='cuda'):
+                      learning_rate=40, epochs=1000, schedule_free=True, device='cuda'):
     model_name = feature_extractor.kind
     hf_dataset = get_tokenized_dataset(data, tokenizer, _type="seq2seq" if model_name.startswith('t5') else "causal")
 
