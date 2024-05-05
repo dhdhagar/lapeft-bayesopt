@@ -76,12 +76,17 @@ class CustomEarlyStoppingCallback(EarlyStoppingCallback):
 
 class CustomProgressCallback(ProgressCallback):
     def __init__(self):
-        super()
-        self.training_bar = None
-        self.progress_bar = None
-    # def on_log(self, args, state, control, logs=None, **kwargs):
-    #     if state.is_local_process_zero and self.training_bar is not None:
-    #         _ = logs.pop("total_flos", None)
+        super(self)
+    def on_train_begin(self, args, state, control, **kwargs):
+        pass
+    def on_step_end(self, args, state, control, **kwargs):
+        pass
+    def on_prediction_step(self, args, state, control, eval_dataloader=None, **kwargs):
+        pass
+    def on_log(self, args, state, control, logs=None, **kwargs):
+        pass
+    def on_train_end(self, args, state, control, **kwargs):
+        pass
 
 
 def create_trainer(model, tokenizer, training_args, dataset, schedule_free=False, _type="seq2seq"):
