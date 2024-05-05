@@ -1,6 +1,7 @@
 from transformers import T5ForConditionalGeneration, T5Config, AutoModelForCausalLM, \
     AutoTokenizer, T5Tokenizer, TrainingArguments, Trainer, DataCollatorForLanguageModeling, DataCollatorForSeq2Seq, \
-    DataCollatorWithPadding, get_scheduler, EarlyStoppingCallback, IntervalStrategy, TrainerCallback
+    DataCollatorWithPadding, get_scheduler, EarlyStoppingCallback, IntervalStrategy
+from transformers.trainer_callback import ProgressCallback
 from peft import get_peft_model, PromptTuningConfig, TaskType, PromptTuningInit, PeftModel
 import schedulefree
 import torch
@@ -14,7 +15,8 @@ def get_tokenized_dataset(data, tokenizer, _type="seq2seq"):
     if type(data['prompts']) is not list or len(data['prompts']) == 1:
         # If data has only one prompt element, we will use it as the target and use a dummy input as the prompt
         dummy_prompt = True
-        raw_dataset = [{'prompt': '#', 'target': data['prompts'] if type(data['prompts']) is str else data['prompts'][0]}]
+        raw_dataset = [
+            {'prompt': '#', 'target': data['prompts'] if type(data['prompts']) is str else data['prompts'][0]}]
     else:
         # If data has more than one prompt element, we will use the last prompt as the target
         # Note: this means it's not compatible with prompt_strategy=hint-goodness
@@ -43,7 +45,7 @@ def get_tokenized_dataset(data, tokenizer, _type="seq2seq"):
     return hf_dataset
 
 
-def create_training_arguments(out_dir, learning_rate=30, epochs=200, device='cuda'):
+def create_training_arguments(out_dir, learning_rate=30, epochs=1000, device='cuda'):
     os.makedirs(os.path.join(out_dir, 'temp'), exist_ok=True)
     training_args = TrainingArguments(
         output_dir=os.path.join(out_dir, 'temp'),
@@ -53,7 +55,7 @@ def create_training_arguments(out_dir, learning_rate=30, epochs=200, device='cud
         num_train_epochs=epochs,
         # logging_steps=epochs // 10,
         logging_strategy="no",  # disable logging
-        eval_steps=epochs // 10,
+        eval_steps=epochs // 50,
         metric_for_best_model='accuracy',
         load_best_model_at_end=True,
         save_strategy=IntervalStrategy.STEPS,
@@ -70,6 +72,15 @@ class CustomEarlyStoppingCallback(EarlyStoppingCallback):
         is_correct = kwargs['metrics']['eval_accuracy']
         if is_correct:
             control.should_training_stop = True
+
+
+class CustomProgressCallback(ProgressCallback):
+    def __init__(self):
+        super()
+
+    def on_log(self, args, state, control, logs=None, **kwargs):
+        if state.is_local_process_zero and self.training_bar is not None:
+            _ = logs.pop("total_flos", None)
 
 
 def create_trainer(model, tokenizer, training_args, dataset, schedule_free=False, _type="seq2seq"):
@@ -99,7 +110,7 @@ def create_trainer(model, tokenizer, training_args, dataset, schedule_free=False
         train_dataset=dataset,
         eval_dataset=dataset,
         data_collator=data_collator,
-        callbacks=[CustomEarlyStoppingCallback()],
+        callbacks=[CustomEarlyStoppingCallback(), CustomProgressCallback()],
         compute_metrics=compute_metrics,
         **add_args
     )
