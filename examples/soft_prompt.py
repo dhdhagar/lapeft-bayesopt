@@ -11,10 +11,10 @@ import random
 
 
 def get_tokenized_dataset(data, tokenizer, _type="seq2seq"):
-    if len(data['prompts']) == 1:
+    if type(data['prompts']) is not list or len(data['prompts']) == 1:
         # If data has only one prompt element, we will use it as the target and use a dummy input as the prompt
         dummy_prompt = True
-        raw_dataset = [{'prompt': '#', 'target': data['prompts'][0]}]
+        raw_dataset = [{'prompt': '#', 'target': data['prompts'] if type(data['prompts']) is str else data['prompts'][0]}]
     else:
         # If data has more than one prompt element, we will use the last prompt as the target
         # Note: this means it's not compatible with prompt_strategy=hint-goodness

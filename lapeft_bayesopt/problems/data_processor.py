@@ -31,19 +31,19 @@ class DataProcessor:
     def get_dataloader(
         self, pandas_dataset: pd.DataFrame,
         batch_size=16, max_seq_len=512, shuffle=False,
-        append_eos=True, additive=False
+        append_eos=True, additive=False, vtoken=False
     ) -> data_utils.DataLoader:
         dataset = Dataset.from_pandas(pandas_dataset)
 
         def tokenize(row):
             out = {}
-            prompts = self.prompt_builder.get_prompt(row[self.x_col], self.obj_str, additive=additive)
+            prompts = self.prompt_builder.get_prompt(row[self.x_col], self.obj_str, additive=additive, vtoken=vtoken)
             out['prompts'] = prompts
             if append_eos:
                 prompts = [prompt + self.tokenizer.eos_token for prompt in prompts]
             if len(prompts) == 1:
                 prompts = prompts[0]
-            out.update(self.tokenizer(prompts, truncation=True, max_length=max_seq_len, padding=True))
+            out.update({**self.tokenizer(prompts, truncation=True, max_length=max_seq_len, padding=True)})
             labels = self._get_targets(row)
             if labels is not None:
                 out['labels'] = labels
@@ -56,7 +56,7 @@ class DataProcessor:
             sys.exit(1)
 
         return data_utils.DataLoader(
-            dataset, batch_size=1 if additive else batch_size, shuffle=shuffle,
+            dataset, batch_size=1 if (additive or vtoken) else batch_size, shuffle=shuffle,
             collate_fn=DataCollatorWithPadding(self.tokenizer)
         )
 

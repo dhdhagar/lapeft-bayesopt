@@ -220,7 +220,8 @@ def load_features(dataset, test_word, test_idx):
         # Build the textual representation based on the prompt strategy
         prompt_builder = MyPromptBuilder(kind=args.prompt_strategy, hint=args.hint)
         data_processor = TwentyQuestionsDataProcessor(prompt_builder, tokenizer)
-        dataloader = data_processor.get_dataloader(dataset, additive=args.additive_features or is_vtoken_feat_extraction)
+        dataloader = data_processor.get_dataloader(dataset, additive=args.additive_features,
+                                                   vtoken=is_vtoken_feat_extraction)
 
         # Get features and target values for each candidate
         features, targets = [], []
