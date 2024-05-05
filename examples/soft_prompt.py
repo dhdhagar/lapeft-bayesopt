@@ -77,10 +77,11 @@ class CustomEarlyStoppingCallback(EarlyStoppingCallback):
 class CustomProgressCallback(ProgressCallback):
     def __init__(self):
         super()
-
-    def on_log(self, args, state, control, logs=None, **kwargs):
-        if state.is_local_process_zero and self.training_bar is not None:
-            _ = logs.pop("total_flos", None)
+        self.training_bar = None
+        self.progress_bar = None
+    # def on_log(self, args, state, control, logs=None, **kwargs):
+    #     if state.is_local_process_zero and self.training_bar is not None:
+    #         _ = logs.pop("total_flos", None)
 
 
 def create_trainer(model, tokenizer, training_args, dataset, schedule_free=False, _type="seq2seq"):
