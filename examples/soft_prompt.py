@@ -83,6 +83,8 @@ class CustomProgressCallback(ProgressCallback):
         pass
     def on_prediction_step(self, args, state, control, eval_dataloader=None, **kwargs):
         pass
+    def on_evaluate(self, args, state, control, **kwargs):
+        pass
     def on_log(self, args, state, control, logs=None, **kwargs):
         pass
     def on_train_end(self, args, state, control, **kwargs):
