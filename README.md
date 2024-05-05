@@ -13,6 +13,8 @@ pip install protobuf  # for llama-2 compatibility
 
 pip install peft==0.8.2
 pip install datasets==2.14.5
+
+# Install schedulefree
 ```
 
 ---

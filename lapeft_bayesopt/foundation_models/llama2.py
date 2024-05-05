@@ -5,13 +5,17 @@ from .utils import LLMFeatureType
 
 class Llama2Regressor(BaseLLMRegressor):
 
-    def __init__(self, kind, tokenizer, reduction=LLMFeatureType.AVERAGE, n_hidden_units=100, n_outputs=1):
+    def __init__(self, kind, tokenizer, reduction=LLMFeatureType.AVERAGE, n_hidden_units=100, n_outputs=1,
+                 dtype=None):
         assert kind in ['llama-2-7b', 'llama-2-13b', 'llama-2-70b']
 
-        kind = f'meta-llama/{kind.capitalize()}-hf'
-        config = LlamaConfig.from_pretrained(kind)
+        self.kind = f'meta-llama/{kind.capitalize()}-hf'
+        add_args = {}
+        config = LlamaConfig.from_pretrained(self.kind)
         config.attn_dropout = 0
-        feature_extractor = LlamaModel.from_pretrained(kind, config=config)
+        if dtype is not None:
+            add_args['torch_dtype'] = dtype
+        feature_extractor = LlamaModel.from_pretrained(self.kind, config=config, **add_args)
 
         super().__init__(
             tokenizer=tokenizer,

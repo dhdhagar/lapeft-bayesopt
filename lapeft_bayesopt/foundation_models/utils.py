@@ -37,6 +37,6 @@ def get_llama2_tokenizer(kind):
 
 
 def get_t5_tokenizer(kind):
-    tokenizer = T5Tokenizer.from_pretrained(kind, model_max_length=512)
+    tokenizer = T5Tokenizer.from_pretrained(kind)  # , model_max_length=512)
     return tokenizer
 

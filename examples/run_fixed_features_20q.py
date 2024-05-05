@@ -25,6 +25,7 @@ from lapeft_bayesopt.utils import helpers
 # Our self-defined problems, using the format provided by lapeft-bayesopt
 from data_processor import TwentyQuestionsDataProcessor
 from prompting import MyPromptBuilder
+from soft_prompt import get_virtual_token
 
 from botorch.models.gp_regression import SingleTaskGP
 from botorch.models.transforms.outcome import Standardize
@@ -92,7 +93,7 @@ class Parser(argparse.ArgumentParser):
             "--save_word_specific_dataset", action=argparse.BooleanOptionalAction, default=False
         )
         self.add_argument(
-            "--feat_extraction_strategy", type=str, choices=['last-token', 'average', 'max', 'first-token'],
+            "--feat_extraction_strategy", type=str, choices=['last-token', 'average', 'max', 'first-token', 'vtoken'],
             default="last-token"
         )
         self.add_argument(
@@ -176,8 +177,10 @@ def load_features(dataset, test_word, test_idx):
         args.feat_extraction_strategy,
         args.model
     ]
+    is_vtoken_feat_extraction = args.feat_extraction_strategy == 'vtoken'
     if args.additive_features:
         CACHE_FNAME.append('additive')
+        assert not is_vtoken_feat_extraction
     CACHE_FNAME = '_'.join(CACHE_FNAME)
     # If cache exists then just load it, otherwise compute the features
     if not args.reset_cache and os.path.exists(os.path.join(CACHE_FPATH, f'{CACHE_FNAME}_feats.bin')):
@@ -185,22 +188,28 @@ def load_features(dataset, test_word, test_idx):
         targets = torch.load(os.path.join(CACHE_FPATH, f'{CACHE_FNAME}_targets.bin'))
         print('\nLoaded cached features.')
     else:
+        dtype = {
+            "fp16": torch.float16,
+            "fp32": torch.float32,
+        }.get(args.dtype, None)
         # Compute features from the last hidden state
         if args.model.startswith('t5'):
             tokenizer = get_t5_tokenizer(args.model)
             llm_feat_extractor = T5Regressor(
                 kind=args.model,
-                tokenizer=tokenizer
+                tokenizer=tokenizer,
+                encoder_only=not is_vtoken_feat_extraction,
+                dtype=dtype
             )
         elif args.model.startswith('llama'):
             tokenizer = get_llama2_tokenizer(args.model)
             llm_feat_extractor = Llama2Regressor(
                 kind=args.model,
-                tokenizer=tokenizer
+                tokenizer=tokenizer,
+                dtype=dtype
             )
 
-        # Need CUDA otherwise will be so slow!
-        if args.cuda:
+        if not is_vtoken_feat_extraction and args.cuda:
             llm_feat_extractor.cuda()
         llm_feat_extractor.eval()
         llm_feat_extractor.freeze_params()
@@ -208,26 +217,32 @@ def load_features(dataset, test_word, test_idx):
         # Build the textual representation based on the prompt strategy
         prompt_builder = MyPromptBuilder(kind=args.prompt_strategy, hint=args.hint)
         data_processor = TwentyQuestionsDataProcessor(prompt_builder, tokenizer)
-        dataloader = data_processor.get_dataloader(dataset, additive=args.additive_features)
+        dataloader = data_processor.get_dataloader(dataset, additive=args.additive_features or is_vtoken_feat_extraction)
 
-        # Forward pass through the LLM, take the aggregate (over sequence dimension)
-        # of the last transformer embeddings/features
+        # Get features and target values for each candidate
         features, targets = [], []
         for data in tqdm.tqdm(dataloader):
-            with torch.no_grad():
-                data['input_ids'] = data['input_ids'].squeeze()
-                data['attention_mask'] = data['attention_mask'].squeeze()
-                feat = llm_feat_extractor.forward_features(data)
-                if args.additive_features:
-                    feat = feat.mean(dim=0).unsqueeze(dim=0)
-                if args.feat_extraction_strategy == 'average':
-                    feat = get_avg_features(feat, data)
-                elif args.feat_extraction_strategy == 'max':
-                    feat = get_max_features(feat, data)
-                elif args.feat_extraction_strategy == 'last-token':
-                    feat = get_last_token_features(feat, data)
-                elif args.feat_extraction_strategy == 'first-token':
-                    feat = get_first_token_features(feat, data)
+            if is_vtoken_feat_extraction:
+                # Backpropagate through the LLM to learn features as virtual tokens
+                feat = get_virtual_token(llm_feat_extractor.feature_extractor, tokenizer, data,
+                                         device='cuda' if args.cuda else 'cpu')
+            else:
+                # Forward pass through the LLM, take the aggregate (over sequence dimension)
+                # of the last hidden state
+                with torch.no_grad():
+                    data['input_ids'] = data['input_ids'].squeeze()
+                    data['attention_mask'] = data['attention_mask'].squeeze()
+                    feat = llm_feat_extractor.forward_features(data)
+                    if args.additive_features:
+                        feat = feat.mean(dim=0).unsqueeze(dim=0)
+                    if args.feat_extraction_strategy == 'average':
+                        feat = get_avg_features(feat, data)
+                    elif args.feat_extraction_strategy == 'max':
+                        feat = get_max_features(feat, data)
+                    elif args.feat_extraction_strategy == 'last-token':
+                        feat = get_last_token_features(feat, data)
+                    elif args.feat_extraction_strategy == 'first-token':
+                        feat = get_first_token_features(feat, data)
             features += list(feat)
             if 'labels' in data:
                 targets += list(data['labels'])
