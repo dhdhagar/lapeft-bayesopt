@@ -225,7 +225,8 @@ def load_features(dataset, test_word, test_idx):
 
         # Get features and target values for each candidate
         features, targets = [], []
-        for data in tqdm.tqdm(dataloader):
+        pbar = tqdm.tqdm(dataloader.dataset if is_vtoken_feat_extraction else dataloader)
+        for data in pbar:
             if is_vtoken_feat_extraction:
                 # Backpropagate through the LLM to learn features as virtual tokens
                 feat = get_virtual_token(llm_feat_extractor.feature_extractor, tokenizer, data,
