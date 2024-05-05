@@ -69,6 +69,9 @@ class Parser(argparse.ArgumentParser):
             default="llama-2-7b"
         )
         self.add_argument(
+            "--dtype", type=str, choices=['fp16', 'fp32'], default=None
+        )
+        self.add_argument(
             "--init_strategy", type=str, choices=['random'], default="random"
         )
         self.add_argument(
