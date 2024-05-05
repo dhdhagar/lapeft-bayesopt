@@ -2,7 +2,7 @@ from lapeft_bayesopt.problems.prompting import PromptBuilder
 
 
 class MyPromptBuilder(PromptBuilder):
-    def __init__(self, kind: str, hint: str = ""):
+    def __init__(self, kind: str, hint: str):
         self.kind = kind
         self.hint = hint
 
@@ -16,27 +16,27 @@ class MyPromptBuilder(PromptBuilder):
         # TwentyQuestions
         instruction = 'The task is to find a hidden test word by guessing new words.'
         next_word = f'The next guess is {x}.'
-        hint = self.hint
+        goodness = f'Is that a good guess?'
+        hint = self.hint  # e.g. for "computer": "Hint: the hidden word is an example of a machine."
 
         if self.kind == 'word':
             return [x]
         elif self.kind == 'instruction':
-            # return f'The task is to find a hidden test word by guessing new words. What is a word that is similar to {x}?'
             if not additive:
                 return [f'{instruction} {next_word}']
             else:
                 return [instruction, next_word]
         elif self.kind == 'hint':
-            assert self.hint != ""
+            assert self.hint is not None and self.hint != ""
             if not additive:
                 return [f'{instruction} {hint} {next_word}']
             else:
                 return [instruction, hint, next_word]
         elif self.kind == 'hint-goodness':
-            assert self.hint != ""
+            assert self.hint is not None and self.hint != ""
             if not additive:
-                return [f'{instruction} {hint} {next_word} Is that a good guess?']
+                return [f'{instruction} {hint} {next_word} {goodness}']
             else:
-                return [instruction, hint, f'{next_word} Is that a good guess?']
+                return [instruction, hint, next_word, goodness]
         else:
             return NotImplementedError
