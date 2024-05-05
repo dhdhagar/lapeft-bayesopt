@@ -208,7 +208,7 @@ def load_features(dataset, test_word, test_idx):
         # Build the textual representation based on the prompt strategy
         prompt_builder = MyPromptBuilder(kind=args.prompt_strategy, hint=args.hint)
         data_processor = TwentyQuestionsDataProcessor(prompt_builder, tokenizer)
-        dataloader = data_processor.get_dataloader(dataset, shuffle=False, additive=args.additive_features)
+        dataloader = data_processor.get_dataloader(dataset, additive=args.additive_features)
 
         # Forward pass through the LLM, take the aggregate (over sequence dimension)
         # of the last transformer embeddings/features
@@ -605,28 +605,10 @@ def plot_posterior(posterior_vals, obs_y, obs_y_rank, n_warm_start, path, animat
     all_vals = np.array([posterior_vals[k] for k in posterior_vals])
     plt.clf()
     fig, ax = plt.subplots()
-    vals = all_vals[len(all_vals) - 1 if not animate else 0]  # Last posterior values if not animating
-    vals = vals[(1 if hide_optim else 0):, :]  # Option to exclude optimal value for visualization
-    y, mean, std = vals[:, 0], vals[:, 1], vals[:, 2]
-    x = 1 + np.arange(len(y))  # Rank of the words
-    ax.plot(x, y, label="True")
-    ax.plot(x, mean, label="Posterior", color="orange", alpha=0.8)
-    ax.scatter(obs_y_rank[:n_warm_start], obs_y[:n_warm_start], label="Warm-start", color="gray")
-    ax.fill_between(x, mean - std, mean + std, alpha=0.2, color="orange")
-    _posterior_trend = np.polyfit(x, mean, 8)  # (x, mean, 8)
-    posterior_trend = np.poly1d(_posterior_trend)
-    ax.plot(x, posterior_trend(x), "r--", label=f"Posterior Trend")  # (s={_posterior_trend[0]})
-    ax.legend()
-    ax.set_title(f"t = {len(all_vals) - 1 if not animate else 0}")
-    ax.set_ylabel("Objective")
-    # Set y limit to be the same for all frames
-    ax.set_ylim([-5, 5] if args.surrogate_fn == "laplace" else [-0.1, 1.1])
-    ax.set_xlabel("Rank")
-    ax.grid()
 
     def update(frame):
         ax.clear()
-        vals = all_vals[frame if frame < len(all_vals) else (frame - 1)]
+        vals = all_vals[len(all_vals) - 1 if not animate else (frame if frame < len(all_vals) else (frame - 1))]
         vals = vals[(1 if hide_optim else 0):, :]
         y, mean, std = vals[:, 0], vals[:, 1], vals[:, 2]
         x = 1 + np.arange(len(y))
@@ -636,9 +618,10 @@ def plot_posterior(posterior_vals, obs_y, obs_y_rank, n_warm_start, path, animat
         ax.scatter(obs_y_rank[n_warm_start + 1:n_warm_start + frame], obs_y[n_warm_start + 1:n_warm_start + frame],
                    label="BO Observation", color="red")
         ax.fill_between(x, mean - std, mean + std, alpha=0.2, color="orange")
-        _posterior_trend = np.polyfit(x, mean, 8)  # (x, mean, 8)
-        posterior_trend = np.poly1d(_posterior_trend)
-        ax.plot(x, posterior_trend(x), "r--", label=f"Posterior Trend")  # (s={_posterior_trend[0]})
+        posterior_trend = np.polyfit(x, mean, 8)
+        posterior_trend = np.poly1d(posterior_trend)
+        posterior_trend_y = posterior_trend(x)
+        ax.plot(x, posterior_trend_y, "r--", label=f"Posterior Trend")  # (s={_posterior_trend[0]})
         ax.legend()
         ax.set_title(f"t = {frame}")
         ax.set_ylabel("Objective")
@@ -646,6 +629,8 @@ def plot_posterior(posterior_vals, obs_y, obs_y_rank, n_warm_start, path, animat
         ax.set_ylim([-5, 5] if args.surrogate_fn == "laplace" else [-0.1, 1.1])
         ax.set_xlabel("Rank")
         ax.grid()
+
+    update(frame=0)  # initial plot
 
     if animate:
         ani = animation.FuncAnimation(fig=fig, func=update, frames=range(len(all_vals) + 1), interval=anim_interval,

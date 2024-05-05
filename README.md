@@ -3,15 +3,16 @@
 ```shell
 # Install gensim to create word2vec datasets
 pip install gensim
-```
 
-```shell
 # Install laplace-bayesopt for unifying the BO interface
 pip install git+https://git@github.com/wiseodd/laplace-bayesopt
-```
 
-```shell
 pip install sentencepiece
+
+pip install protobuf  # for llama-2 compatibility
+
+pip install peft==0.8.2
+pip install datasets==2.14.5
 ```
 
 ---
