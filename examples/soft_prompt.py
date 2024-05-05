@@ -131,7 +131,8 @@ def get_virtual_token(feature_extractor, tokenizer, data, out_dir, num_virtual_t
     # Run training
     trainer.train()
 
-    # TODO: Verify that the final validation accuracy is True
+    # Verify that the final validation accuracy is True
+    assert trainer.state.log_history[-2]['eval_accuracy']
 
     # Return virtual token
     with torch.no_grad():
