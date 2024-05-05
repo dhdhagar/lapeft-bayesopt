@@ -8,7 +8,7 @@ MODELS="t5-base llama-2-7b"  # t5-small t5-large llama-2-13b llama-2-70b
 # Define the prompting strategies
 PROMPTS="word instruction hint hint-goodness"
 # Define the feature aggregation strategies
-FEATS="average last-token"
+FEATS="average last-token vtoken"
 # Define the feature types
 FEAT_TYPES="no-additive_features additive_features"
 # Get the word from the first argument
@@ -17,6 +17,8 @@ TEST_WORDS="computer"
 HINT="Hint: the hidden word is an example of a machine."  # Support for only one hint currently
 # Reset cache
 RESET_CACHE="no"
+# Wildcard
+WILDCARD=""
 
 # Parse arguments
 while [[ $# -gt 0 ]]; do
@@ -30,6 +32,7 @@ while [[ $# -gt 0 ]]; do
         --feats) FEATS="$2"; shift ;;
         --feat_types) FEAT_TYPES="$2"; shift ;;
         --reset_cache) RESET_CACHE="$2"; shift ;;
+        --wildcard) WILDCARD="$2"; shift ;;
         *) echo "Invalid option: $1" >&2; exit 1 ;;
     esac
     shift
@@ -84,7 +87,7 @@ Generating features --> dataset: '$DATASET', word: '$WORD', model: '$MODEL', pro
                           --save_word_specific_dataset \
                           --exit_after_feat_extraction \
                           --$CACHE_SETTING \
-                          --$CUDA_SETTING
+                          --$CUDA_SETTING${WILDCARD:+ ${WILDCARD}}
                     done
                 done
             done
