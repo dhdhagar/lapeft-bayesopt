@@ -51,7 +51,8 @@ def create_training_arguments(out_dir, learning_rate=30, epochs=200, device='cud
         auto_find_batch_size=True,
         learning_rate=learning_rate,
         num_train_epochs=epochs,
-        logging_steps=epochs // 10,
+        # logging_steps=epochs // 10,
+        logging_strategy="no",  # disable logging
         eval_steps=epochs // 10,
         metric_for_best_model='accuracy',
         load_best_model_at_end=True,
