@@ -127,7 +127,7 @@ def create_trainer(model, tokenizer, training_args, dataset, schedule_free=False
 
 
 def get_virtual_token(feature_extractor, tokenizer, data, out_dir, num_virtual_tokens=1,
-                      learning_rate=40, epochs=1000, schedule_free=True, device='cuda'):
+                      learning_rate=40, epochs=2000, schedule_free=True, device='cuda'):
     model_name = feature_extractor.kind
     hf_dataset = get_tokenized_dataset(data, tokenizer, _type="seq2seq" if model_name.startswith('t5') else "causal")
 
@@ -144,7 +144,7 @@ def get_virtual_token(feature_extractor, tokenizer, data, out_dir, num_virtual_t
     # print(peft_model.print_trainable_parameters())
 
     # Get training args
-    learning_rate = 60 if model_name.startswith('t5') else 3e-2
+    learning_rate = 60 if model_name.startswith('t5') else 7e-2
     training_args = create_training_arguments(learning_rate=learning_rate, eval_steps=15,  # epochs//50,
                                               epochs=epochs, out_dir=out_dir, device=device)
     # Get trainer
