@@ -56,6 +56,7 @@ def create_training_arguments(out_dir, learning_rate, epochs, eval_steps, device
         # logging_steps=epochs // 10,
         logging_strategy="no",  # disable logging
         eval_steps=eval_steps,
+        save_steps=eval_steps*100,
         metric_for_best_model='accuracy',
         load_best_model_at_end=True,
         save_strategy=IntervalStrategy.STEPS,
