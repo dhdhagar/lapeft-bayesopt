@@ -45,7 +45,7 @@ def get_tokenized_dataset(data, tokenizer, _type="seq2seq"):
     return hf_dataset
 
 
-def create_training_arguments(out_dir, learning_rate, epochs, device='cuda'):
+def create_training_arguments(out_dir, learning_rate, epochs, eval_steps, device='cuda'):
     os.makedirs(os.path.join(out_dir, 'temp'), exist_ok=True)
     training_args = TrainingArguments(
         output_dir=os.path.join(out_dir, 'temp'),
@@ -55,7 +55,7 @@ def create_training_arguments(out_dir, learning_rate, epochs, device='cuda'):
         num_train_epochs=epochs,
         # logging_steps=epochs // 10,
         logging_strategy="no",  # disable logging
-        eval_steps=epochs // 50,
+        eval_steps=eval_steps,
         metric_for_best_model='accuracy',
         load_best_model_at_end=True,
         save_strategy=IntervalStrategy.STEPS,
@@ -143,8 +143,8 @@ def get_virtual_token(feature_extractor, tokenizer, data, out_dir, num_virtual_t
     # print(peft_model.print_trainable_parameters())
 
     # Get training args
-    learning_rate = 100 if model_name.startswith('t5') else 3e-1
-    training_args = create_training_arguments(learning_rate=learning_rate,
+    learning_rate = 100 if model_name.startswith('t5') else 3e-2
+    training_args = create_training_arguments(learning_rate=learning_rate, eval_steps=15,  # epochs//50,
                                               epochs=epochs, out_dir=out_dir, device=device)
     # Get trainer
     trainer = create_trainer(model=peft_model, tokenizer=tokenizer, training_args=training_args, dataset=hf_dataset,
