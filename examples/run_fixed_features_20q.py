@@ -172,6 +172,8 @@ def load_features(dataset, test_word, test_idx):
     """
     Load cached features, if exists, otherwise compute and cache them.
     """
+    if args.debug:
+        dataset = dataset[:5]
     CACHE_FPATH = os.path.join(args.cache_dir, args.data_dir.split('/')[-1], f'{args.dataset}')
     os.makedirs(CACHE_FPATH, exist_ok=True)
     CACHE_FNAME = [
