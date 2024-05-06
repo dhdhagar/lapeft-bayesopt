@@ -182,6 +182,8 @@ def load_features(dataset, test_word, test_idx):
         args.feat_extraction_strategy,
         args.model
     ]
+    if args.dtype is not None and args.dtype != "fp32":
+        CACHE_FNAME.append(args.dtype)
     is_vtoken_feat_extraction = args.feat_extraction_strategy == 'vtoken'
     if args.additive_features:
         CACHE_FNAME.append('additive')
