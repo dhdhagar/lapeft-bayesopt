@@ -143,7 +143,8 @@ def get_virtual_token(feature_extractor, tokenizer, data, out_dir, num_virtual_t
     # print(peft_model.print_trainable_parameters())
 
     # Get training args
-    training_args = create_training_arguments(learning_rate=learning_rate * (4 if model_name.startswith('t5') else 0.5),
+    learning_rate = 100 if model_name.startswith('t5') else 3e-3
+    training_args = create_training_arguments(learning_rate=learning_rate,
                                               epochs=epochs, out_dir=out_dir, device=device)
     # Get trainer
     trainer = create_trainer(model=peft_model, tokenizer=tokenizer, training_args=training_args, dataset=hf_dataset,
