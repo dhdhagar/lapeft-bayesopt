@@ -127,34 +127,42 @@ def create_trainer(model, tokenizer, training_args, dataset, schedule_free=False
 
 
 def get_virtual_token(feature_extractor, tokenizer, data, out_dir, num_virtual_tokens=1,
-                      learning_rate=40, epochs=2000, schedule_free=True, device='cuda'):
+                      learning_rate=40, epochs=2000, schedule_free=True, device='cuda', n_retry=3):
     model_name = feature_extractor.kind
     hf_dataset = get_tokenized_dataset(data, tokenizer, _type="seq2seq" if model_name.startswith('t5') else "causal")
-
-    # Load peft model
-    generation_config = PromptTuningConfig(
-        task_type=TaskType.SEQ_2_SEQ_LM if model_name.startswith('t5') else TaskType.CAUSAL_LM,
-        prompt_tuning_init=PromptTuningInit.TEXT,  # PromptTuningInit.RANDOM
-        prompt_tuning_init_text=tokenizer.decode(data['labels'][data['labels'].count(-100):], skip_special_tokens=True),
-        num_virtual_tokens=num_virtual_tokens,
-        tokenizer_name_or_path=model_name,  # pre-trained model name
-        num_transformer_submodules=1  # Force the vtoken to be added at the encoder only for encoder-decoder models
-    )
-    peft_model = get_peft_model(feature_extractor.feature_extractor, generation_config)
-    # print(peft_model.print_trainable_parameters())
-
-    # Get training args
+    done = False
     learning_rate = 60 if model_name.startswith('t5') else 7e-2
-    training_args = create_training_arguments(learning_rate=learning_rate, eval_steps=15,  # epochs//50,
-                                              epochs=epochs, out_dir=out_dir, device=device)
-    # Get trainer
-    trainer = create_trainer(model=peft_model, tokenizer=tokenizer, training_args=training_args, dataset=hf_dataset,
-                             schedule_free=schedule_free, _type="seq2seq" if model_name.startswith('t5') else "causal")
-    # Run training
-    trainer.train()
+    lr_mult = 1.
+    while not done:
+        # Load peft model
+        generation_config = PromptTuningConfig(
+            task_type=TaskType.SEQ_2_SEQ_LM if model_name.startswith('t5') else TaskType.CAUSAL_LM,
+            prompt_tuning_init=PromptTuningInit.TEXT,  # PromptTuningInit.RANDOM
+            prompt_tuning_init_text=tokenizer.decode(data['labels'][data['labels'].count(-100):], skip_special_tokens=True),
+            num_virtual_tokens=num_virtual_tokens,
+            tokenizer_name_or_path=model_name,  # pre-trained model name
+            num_transformer_submodules=1  # Force the vtoken to be added at the encoder only for encoder-decoder models
+        )
+        peft_model = get_peft_model(feature_extractor.feature_extractor, generation_config)
+        # print(peft_model.print_trainable_parameters())
 
-    # Verify that the final validation accuracy is True
-    assert trainer.state.log_history[-2]['eval_accuracy']
+        # Get training args
+        training_args = create_training_arguments(learning_rate=learning_rate*lr_mult, eval_steps=15,  # epochs//50,
+                                                  epochs=epochs, out_dir=out_dir, device=device)
+        # Get trainer
+        trainer = create_trainer(model=peft_model, tokenizer=tokenizer, training_args=training_args, dataset=hf_dataset,
+                                 schedule_free=schedule_free, _type="seq2seq" if model_name.startswith('t5') else "causal")
+        # Run training
+        trainer.train()
+
+        # Verify that the final validation accuracy is True
+        if trainer.state.log_history[-2]['eval_accuracy']:
+            done = True
+        else:
+            lr_mult *= 1.2
+            n_retry -= 1
+            if n_retry < 0:
+                raise ValueError(f'Could not find a virtual token that works for: {data["prompts"]}')
 
     # Return virtual token
     with torch.no_grad():
