@@ -209,7 +209,8 @@ def load_features(dataset, test_word, test_idx):
             llm_feat_extractor = Llama2Regressor(
                 kind=args.model,
                 tokenizer=tokenizer,
-                dtype=dtype
+                dtype=dtype,
+                vtoken=is_vtoken_feat_extraction
             )
 
         if not is_vtoken_feat_extraction and args.cuda:
