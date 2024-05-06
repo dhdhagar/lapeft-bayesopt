@@ -255,9 +255,10 @@ def load_features(dataset, test_word, test_idx):
             if 'labels' in data:
                 targets += list(data['labels'])
 
-        features = torch.stack(features, dim=0)
+        features = torch.stack(features, dim=0).squeeze()
         if len(targets) > 0:
-            targets = torch.stack(targets, dim=0)
+            targets = torch.stack(targets, dim=0) if type(targets[0]) is torch.Tensor else torch.Tensor(targets)
+            targets = targets.squeeze()
             targets = targets.clamp(min=0., max=1.)  # Used 0-1 normalization for similarity scores
         else:
             targets = cosine_similarity(features, features[test_idx])
