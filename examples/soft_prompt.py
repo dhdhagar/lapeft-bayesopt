@@ -23,7 +23,7 @@ def get_tokenized_dataset(data, tokenizer, _type="seq2seq"):
         dummy_prompt = False
         raw_dataset = [{'prompt': ' '.join(data['prompts'][:-1]), 'target': data['prompts'][-1]}]
     hf_dataset = datasets.Dataset.from_pandas(pd.DataFrame(data=raw_dataset))
-    hf_dataset = hf_dataset.map(lambda x: tokenizer(" ".join(x["prompt"]), text_target=x["target"]))
+    hf_dataset = hf_dataset.map(lambda x: tokenizer(x["prompt"], text_target=x["target"]))
     need_eos = hf_dataset[0]["input_ids"][-1] != tokenizer.eos_token_id
     if _type != "seq2seq":
         # "causal"
