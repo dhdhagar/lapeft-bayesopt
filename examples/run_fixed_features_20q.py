@@ -106,6 +106,9 @@ class Parser(argparse.ArgumentParser):
             "--exit_after_feat_extraction", action=argparse.BooleanOptionalAction, default=False
         )
         self.add_argument(
+            "--normalize_features", action=argparse.BooleanOptionalAction, default=False
+        )
+        self.add_argument(
             "--visualize_posterior", action=argparse.BooleanOptionalAction, default=False
         )
         self.add_argument(
@@ -715,6 +718,8 @@ if __name__ == '__main__':
         # TEMP FIX; TODO: Fix shape of saved features
         features = features.squeeze()
         targets = targets.squeeze()
+        if args.normalize_features:
+            features = torch.nn.functional.normalize(features)
 
     if args.exit_after_feat_extraction:
         print('\nExiting after feature extraction.')
