@@ -369,7 +369,8 @@ def optimize_acqf_and_get_observation(acq_fn, features, unseen_idxs, device):
     return idx_best, candidates
 
 
-def run_bayesopt(words, features, targets, test_word, n_init_data=10, T=None, seed=17, device='cpu'):
+def run_bayesopt(words, features, targets, test_word, n_init_data=10, T=None, seed=17, device='cpu',
+                 features_norm_mean=None):
     np.random.seed(seed)
     torch.manual_seed(seed)
 
@@ -443,7 +444,7 @@ def run_bayesopt(words, features, targets, test_word, n_init_data=10, T=None, se
         prompt = prompt_builder.get_prompt("#", "#", vtoken=True)
         prompt = prompt[:-1]
         prompt_embed = None
-        warm_start_norm_mean = torch.linalg.vector_norm(init_x, dim=1).mean().item()
+        warm_start_norm_mean = features_norm_mean # torch.linalg.vector_norm(init_x, dim=1).mean().item()
         if len(prompt) > 0:
             token_embeds = llm.get_input_embeddings()
             for p in token_embeds.parameters():
@@ -471,7 +472,7 @@ def run_bayesopt(words, features, targets, test_word, n_init_data=10, T=None, se
                     idx_best_vec = features[idx_best].squeeze()
                     print(f"\nOrig (lookup): {words[idx_best]}")
                     for __i, vec in enumerate([idx_best_vec, vec_best]):
-                        vtoken = (vec * (prompt_embed_norm_mean if args.normalize_features else 1))[None, None, :]
+                        vtoken = (vec * (warm_start_norm_mean if args.normalize_features else 1))[None, None, :]
                         vtoken_plus_text = vtoken.to(device)
                         if args.prompt_strategy != 'word':
                             vtoken_plus_text = torch.cat((vtoken, prompt_embed), dim=1)  # prepend vtoken to prompt embed
@@ -769,7 +770,9 @@ if __name__ == '__main__':
         # TEMP FIX; TODO: Fix shape of saved features
         features = features.squeeze()
         targets = targets.squeeze()
+        features_norm_mean = None
         if args.normalize_features:
+            features_norm_mean = features.norm(dim=1).mean.item()
             features = torch.nn.functional.normalize(features)  # l2-normalize
 
     if args.exit_after_feat_extraction:
@@ -785,7 +788,7 @@ if __name__ == '__main__':
         print(f'\nSeed {seed}:')
         results = run_bayesopt(words=list(pd_dataset['Words']), features=features, targets=targets,
                                test_word=test_word, n_init_data=args.n_init_data, T=args.T, seed=seed,
-                               device='cuda' if args.cuda else 'cpu')
+                               device='cuda' if args.cuda else 'cpu', features_norm_mean=features_norm_mean)
         plot(results)
         all_results.append(results)
     end_time = time.time()
