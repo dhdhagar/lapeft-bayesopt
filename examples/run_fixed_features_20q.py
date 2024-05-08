@@ -43,7 +43,7 @@ class Parser(argparse.ArgumentParser):
             "--run_id", type=str
         )
         self.add_argument(
-            "--data_dir", type=str, default='data/twentyquestions/datasets/word2vec-1000'
+            "--data_dir", type=str, default='data/twentyquestions/datasets/word2vec-2000'
         )
         self.add_argument(
             "--cache_dir", type=str, default='cache'
@@ -469,9 +469,9 @@ def run_bayesopt(words, features, targets, test_word, n_init_data=10, T=None, se
                 # Decode the candidate vector
                 if args.decode_cand_vector:
                     idx_best_vec = features[idx_best].squeeze()
-                    print(" ")
+                    print(f"\nOrig (lookup): {words[idx_best]}")
                     for __i, vec in enumerate([idx_best_vec, vec_best]):
-                        vtoken = (vec * (warm_start_norm_mean if args.normalize_features else 1))[None, None, :]
+                        vtoken = (vec * (prompt_embed_norm_mean if args.normalize_features else 1))[None, None, :]
                         vtoken_plus_text = vtoken.to(device)
                         if args.prompt_strategy != 'word':
                             vtoken_plus_text = torch.cat((vtoken, prompt_embed), dim=1)  # prepend vtoken to prompt embed
