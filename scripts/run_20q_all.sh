@@ -13,7 +13,7 @@ time="0-6:00:00"
 DATASETS="word2vec-2000"  # word2vec-1000 word2vec-2000 word2vec-3000 word2vec-4000
 MODELS="t5-base llama-2-7b"  # t5-small t5-base t5-large llama-2-7b llama-2-13b llama-2-70b
 PROMPTS="word instruction hint hint-goodness"
-FEATS="average last-token"
+FEATS="average last-token vtoken"
 FEAT_TYPES="no-additive_features additive_features"
 N_INIT_DATAS="5"  # "1 5 10"
 N_SEEDS=5
@@ -23,6 +23,8 @@ HINT="Hint: the hidden word is an example of a machine."  # Support for only one
 SURROGATES="laplace gp"
 ACQUISITIONS="thompson_sampling logEI"
 ACQ_OPTIMS="evaluate optimize_unbounded optimize_bounded"
+NORMALIZE_FEATS="no yes"
+
 WILDCARD=""
 OUTPUTS=""
 
@@ -50,6 +52,7 @@ while [[ $# -gt 0 ]]; do
         --surrogates) SURROGATES="$2"; shift ;;
         --acquisitions) ACQUISITIONS="$2"; shift ;;
         --acq_optims) ACQ_OPTIMS="$2"; shift ;;
+        --normalize_feats) NORMALIZE_FEATS="$2"; shift ;;
         --wildcard) WILDCARD="$2"; shift ;;
         --outputs) OUTPUTS="$2"; shift ;;
         *) echo "Invalid option: $1" >&2; exit 1 ;;
@@ -62,43 +65,46 @@ for DATASET in $DATASETS; do
         for SURROGATE in $SURROGATES; do
             for ACQUISITION in $ACQUISITIONS; do
                 for ACQ_OPTIM in $ACQ_OPTIMS; do
-                    for MODEL in $MODELS; do
-                        for PROMPT in $PROMPTS; do
-                            for FEAT in $FEATS; do
-                                # Don't run if aggregation is first-token for llama models
-                                if [[ $MODEL == llama* ]]; then
-                                    if [[ $FEAT == "first-token" ]]; then
-                                        echo "Skipping first-token feature extraction for llama models."
-                                        continue
+                    for NORMALIZE_FEAT in $NORMALIZE_FEATS; do
+                        for MODEL in $MODELS; do
+                            for PROMPT in $PROMPTS; do
+                                for FEAT in $FEATS; do
+                                    # Don't run if aggregation is first-token for llama models
+                                    if [[ $MODEL == llama* ]]; then
+                                        if [[ $FEAT == "first-token" ]]; then
+                                            echo "Skipping first-token feature extraction for llama models."
+                                            continue
+                                        fi
                                     fi
-                                fi
-                                for FEAT_TYPE in $FEAT_TYPES; do
-                                    # Skip if feat type is additive and prompt is word
-                                    if [[ $FEAT_TYPE == "additive_features" && $PROMPT == "word" ]]; then
-                                        echo "Skipping additive features with word prompt."
-                                        continue
-                                    fi
-                                    for N_INIT_DATA in $N_INIT_DATAS; do
-                                        for STEP in $STEPS; do
-                                            ./scripts/run_20q.sh \
-                                                --dataset $DATASET \
-                                                --test_word $TEST_WORD \
-                                                --n_init_data $N_INIT_DATA \
-                                                --n_seeds $N_SEEDS \
-                                                --model $MODEL \
-                                                --prompt $PROMPT \
-                                                --hint "$HINT" \
-                                                --feat $FEAT \
-                                                --feat_type $FEAT_TYPE \
-                                                --steps $STEP \
-                                                --partition $partition \
-                                                --n_gpus $n_gpus \
-                                                --n_cpus $n_cpus \
-                                                --mem $mem \
-                                                --time $time \
-                                                --surrogate $SURROGATE \
-                                                --acquisition $ACQUISITION \
-                                                --acq_optim $ACQ_OPTIM${WILDCARD:+ --wildcard $WILDCARD}${OUTPUTS:+ --outputs $OUTPUTS}
+                                    for FEAT_TYPE in $FEAT_TYPES; do
+                                        # Skip if feat type is additive and prompt is word
+                                        if [[ $FEAT_TYPE == "additive_features" && $PROMPT == "word" ]]; then
+                                            echo "Skipping additive features with word prompt."
+                                            continue
+                                        fi
+                                        for N_INIT_DATA in $N_INIT_DATAS; do
+                                            for STEP in $STEPS; do
+                                                ./scripts/run_20q.sh \
+                                                    --dataset $DATASET \
+                                                    --test_word $TEST_WORD \
+                                                    --n_init_data $N_INIT_DATA \
+                                                    --n_seeds $N_SEEDS \
+                                                    --model $MODEL \
+                                                    --prompt $PROMPT \
+                                                    --hint "$HINT" \
+                                                    --feat $FEAT \
+                                                    --feat_type $FEAT_TYPE \
+                                                    --steps $STEP \
+                                                    --partition $partition \
+                                                    --n_gpus $n_gpus \
+                                                    --n_cpus $n_cpus \
+                                                    --mem $mem \
+                                                    --time $time \
+                                                    --surrogate $SURROGATE \
+                                                    --acquisition $ACQUISITION \
+                                                    --acq_optim $ACQ_OPTIM \
+                                                    --normalize_feat $NORMALIZE_FEAT${WILDCARD:+ --wildcard $WILDCARD}${OUTPUTS:+ --outputs $OUTPUTS}
+                                            done
                                         done
                                     done
                                 done

@@ -33,6 +33,7 @@ PROMPT="word"
 HINT="Hint: the hidden word is an example of a machine."
 FEAT="average"
 FEAT_TYPE="no-additive_features"
+NORMALIZE_FEAT="no"
 TEST_WORD="computer"
 SURROGATE="laplace"
 ACQUISITION="thompson_sampling"
@@ -64,6 +65,7 @@ while [[ $# -gt 0 ]]; do
         --hint) HINT="$2"; shift ;;
         --feat) FEAT="$2"; shift ;;
         --feat_type) FEAT_TYPE="$2"; shift ;;
+        --normalize_feat) NORMALIZE_FEAT="$2"; shift ;;
         --steps) STEPS="$2"; shift ;;
         --surrogate) SURROGATE="$2"; shift ;;
         --acquisition) ACQUISITION="$2"; shift ;;
@@ -80,14 +82,22 @@ if [[ $partition == "none" ]]; then
     partition=""
 fi
 
-# If acq_optim="evaluate"=>"", acq_optim="optimize_unbounded"=>"--optimize_acq --optimize_acq_unbounded",
-# acq_optim="optimize_bounded"=>"--optimize_acq"
+# Acquisition optimization setting
 if [[ $ACQ_OPTIM == "evaluate" ]]; then
-  ACQ_OPTIM_FLAG=""
-elif [[ $ACQ_OPTIM == "optimize_unbounded" ]]; then
-  ACQ_OPTIM_FLAG="--optimize_acq --optimize_acq_unbounded"
+  ACQ_OPTIM_FLAG="--no-optimize_acq"
 elif [[ $ACQ_OPTIM == "optimize_bounded" ]]; then
   ACQ_OPTIM_FLAG="--optimize_acq"
+elif [[ $ACQ_OPTIM == "optimize_unbounded" ]]; then
+  ACQ_OPTIM_FLAG="--optimize_acq --optimize_acq_unbounded"
+fi
+
+# Feature normalization setting
+if [[ $NORMALIZE_FEAT == "yes" ]]; then
+    NORMALIZE_FEAT_FLAG="--normalize_features"
+    FEAT_LABEL="_normalized"
+else
+    NORMALIZE_FEAT_FLAG="--no-normalize_features"
+    FEAT_LABEL=""
 fi
 
 # Echo all job arguments in one line
@@ -95,8 +105,8 @@ echo "
 Job arguments: desc=${desc}, partition=${partition}, n_gpus=${n_gpus}, mem=${mem}, time=${time}"
 # Echo all script arguments in one line
 echo "Script arguments: dataset=${DATASET}, test_word=${TEST_WORD}, n_init_data=${N_INIT_DATA}, n_seeds=${N_SEEDS}, \
-model=${MODEL}, prompt=${PROMPT}, hint="${HINT}", feat=${FEAT}, feat_type=${FEAT_TYPE}, steps=${STEPS}, \
-surrogate=${SURROGATE}, acquisition=${ACQUISITION}, acq_optim=${ACQ_OPTIM}${WILDCARD:+", wildcard=${WILDCARD}"}"
+model=${MODEL}, prompt=${PROMPT}, hint="${HINT}", feat=${FEAT}, feat_type=${FEAT_TYPE}, normalize_feat=${NORMALIZE_FEAT}, \
+steps=${STEPS}, surrogate=${SURROGATE}, acquisition=${ACQUISITION}, acq_optim=${ACQ_OPTIM}${WILDCARD:+", wildcard=${WILDCARD}"}"
 
 # Create log directory for the job
 job_dir="jobs/${desc}"
@@ -104,9 +114,7 @@ mkdir -p ${job_dir}
 
 # If additive, then set label as "additive", else leave it blank
 if [[ $FEAT_TYPE == "additive_features" ]]; then
-  FEAT_LABEL="_additive"
-else
-  FEAT_LABEL=""
+  FEAT_LABEL="${FEAT_LABEL}_additive"
 fi
 
 # Determine output dir for script
@@ -149,7 +157,9 @@ JOB_DESC=${desc}_${EXPERIMENT} && JOB_NAME=${JOB_DESC}_${RUN_ID} && \
       --surrogate_fn="${SURROGATE}" \
       --acquisition_fn="${ACQUISITION}" \
       --T=${STEPS} \
-      --out_dir="${OUT_DIR}"${ACQ_OPTIM_FLAG:+ ${ACQ_OPTIM_FLAG}}${WILDCARD:+ ${WILDCARD}}
+      --out_dir="${OUT_DIR}" \
+      ${ACQ_OPTIM_FLAG} \
+      ${NORMALIZE_FEAT_FLAG}${WILDCARD:+ ${WILDCARD}}
 
 echo "Log path: ${job_dir}/${JOB_NAME}.log"
 echo "Output path: ${OUT_DIR}/${RUN_ID}

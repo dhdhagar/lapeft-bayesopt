@@ -545,6 +545,7 @@ def run_bayesopt(words, features, targets, test_word, n_init_data=10, T=None, se
         "hint": args.hint,
         "feat_extraction_strategy": args.feat_extraction_strategy,
         "additive_features": args.additive_features,
+        "normalize_features": args.normalize_features,
         "model": args.model,
         "surrogate_fn": args.surrogate_fn,
         "acquisition_fn": args.acquisition_fn,
@@ -719,7 +720,7 @@ if __name__ == '__main__':
         features = features.squeeze()
         targets = targets.squeeze()
         if args.normalize_features:
-            features = torch.nn.functional.normalize(features)
+            features = torch.nn.functional.normalize(features)  # l2-normalize
 
     if args.exit_after_feat_extraction:
         print('\nExiting after feature extraction.')
@@ -755,6 +756,7 @@ if __name__ == '__main__':
         "hint": args.hint,
         "feat_extraction_strategy": args.feat_extraction_strategy,
         "additive_features": args.additive_features,
+        "normalize_features": args.normalize_features,
         "model": args.model,
         "surrogate_fn": args.surrogate_fn,
         "acquisition_fn": args.acquisition_fn,
