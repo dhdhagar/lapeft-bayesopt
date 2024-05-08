@@ -444,6 +444,7 @@ def run_bayesopt(words, features, targets, test_word, n_init_data=10, T=None, se
         prompt = prompt_builder.get_prompt("#", "#", vtoken=True)
         prompt = prompt[:-1]
         prompt_embed = None
+        warm_start_norm_mean = torch.linalg.vector_norm(init_x, dim=1).mean().item()
         if len(prompt) > 0:
             token_embeds = llm.get_input_embeddings()
             for p in token_embeds.parameters():
@@ -451,7 +452,7 @@ def run_bayesopt(words, features, targets, test_word, n_init_data=10, T=None, se
             # Based on prompt text
             prompt = " ".join(prompt)
             prompt_embed = p[tokenizer(prompt, return_tensors='pt')['input_ids'][0]][None, :, :]
-            prompt_embed_norm_mean = prompt_embed.norm(dim=2).mean().to(device)
+            # prompt_embed_norm_mean = prompt_embed.norm(dim=2).mean().item()
 
     # The BayesOpt loop --- or just use BoTorch since LaplaceBoTorch is compatible
     for t in pbar:
@@ -467,7 +468,7 @@ def run_bayesopt(words, features, targets, test_word, n_init_data=10, T=None, se
                 idx_best, vec_best = optimize_acqf_and_get_observation(acq_fn, features, unseen_idxs, device=device)
                 # Decode the candidate vector
                 if args.decode_cand_vector:
-                    vtoken = (vec_best * (prompt_embed_norm_mean if args.normalize_features else 1))[None, None, :]
+                    vtoken = (vec_best * (warm_start_norm_mean if args.normalize_features else 1))[None, None, :]
                     vtoken_plus_text = vtoken
                     if prompt_embed is not None:
                         vtoken_plus_text = torch.cat((vtoken, prompt_embed), dim=1)  # prepend vtoken to prompt embed
