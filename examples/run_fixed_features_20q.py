@@ -440,7 +440,7 @@ def run_bayesopt(words, features, targets, test_word, n_init_data=10, T=None, se
         llm = llm.to(device)
         llm.eval()
         llm.freeze_params()
-        prompt_builder = MyPromptBuilder(kind=args.prompt_strategy, hint=args.hint)
+        prompt_builder = MyPromptBuilder(kind=args.prompt_strategy if args.prompt_strategy in ['instruction', 'hint'] else 'instruction', hint=args.hint)
         prompt = prompt_builder.get_prompt("#", "#", vtoken=True)
         prompt = prompt[:-1]
         prompt_embed = None
@@ -452,7 +452,7 @@ def run_bayesopt(words, features, targets, test_word, n_init_data=10, T=None, se
             # Based on prompt text
             prompt = " ".join(prompt)
             prompt_embed = p[tokenizer(prompt, return_tensors='pt')['input_ids'][0]][None, :, :]
-            # prompt_embed_norm_mean = prompt_embed.norm(dim=2).mean().item()
+            prompt_embed_norm_mean = prompt_embed.norm(dim=2).mean().item()
 
     # The BayesOpt loop --- or just use BoTorch since LaplaceBoTorch is compatible
     for t in pbar:
@@ -470,7 +470,7 @@ def run_bayesopt(words, features, targets, test_word, n_init_data=10, T=None, se
                 if args.decode_cand_vector:
                     vtoken = (vec_best * (warm_start_norm_mean if args.normalize_features else 1))[None, None, :]
                     vtoken_plus_text = vtoken
-                    if prompt_embed is not None:
+                    if args.prompt_strategy != 'word':
                         vtoken_plus_text = torch.cat((vtoken, prompt_embed), dim=1)  # prepend vtoken to prompt embed
                     with torch.no_grad():
                         vtoken_output = \
