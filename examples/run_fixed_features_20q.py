@@ -17,8 +17,6 @@ from torch.nn.functional import cosine_similarity
 # Non-finetuned surrogates. The finetuned surrogates are in lapeft_bayesopt.surrogates
 # from fixed_feat_surrogate import LaplaceBoTorch
 from laplace_bayesopt.botorch import LaplaceBoTorch
-from lapeft_bayesopt.foundation_models.t5 import T5Regressor
-from lapeft_bayesopt.foundation_models.llama2 import Llama2Regressor
 from lapeft_bayesopt.foundation_models.utils import get_tokenizer_and_model
 from lapeft_bayesopt.utils.acqf import ThompsonSampling  # , thompson_sampling, ucb, ei
 from lapeft_bayesopt.utils import helpers

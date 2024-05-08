@@ -1,5 +1,7 @@
 import torch
 from transformers import LlamaTokenizer, T5Tokenizer
+from lapeft_bayesopt.foundation_models.t5 import T5Regressor
+from lapeft_bayesopt.foundation_models.llama2 import Llama2Regressor
 from enum import Enum
 
 
