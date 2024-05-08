@@ -40,3 +40,22 @@ def get_t5_tokenizer(kind):
     tokenizer = T5Tokenizer.from_pretrained(kind)  # , model_max_length=512)
     return tokenizer
 
+
+def get_tokenizer_and_model(kind, dtype, is_vtoken=False):
+    if kind.startswith('t5'):
+        tokenizer = get_t5_tokenizer(kind)
+        llm_feat_extractor = T5Regressor(
+            kind=kind,
+            tokenizer=tokenizer,
+            encoder_only=not is_vtoken,
+            dtype=dtype
+        )
+    elif kind.startswith('llama'):
+        tokenizer = get_llama2_tokenizer(kind)
+        llm_feat_extractor = Llama2Regressor(
+            kind=kind,
+            tokenizer=tokenizer,
+            dtype=dtype,
+            vtoken=is_vtoken
+        )
+    return tokenizer, llm_feat_extractor

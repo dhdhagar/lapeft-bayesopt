@@ -19,13 +19,13 @@ from torch.nn.functional import cosine_similarity
 from laplace_bayesopt.botorch import LaplaceBoTorch
 from lapeft_bayesopt.foundation_models.t5 import T5Regressor
 from lapeft_bayesopt.foundation_models.llama2 import Llama2Regressor
-from lapeft_bayesopt.foundation_models.utils import get_llama2_tokenizer, get_t5_tokenizer
+from lapeft_bayesopt.foundation_models.utils import get_tokenizer_and_model
 from lapeft_bayesopt.utils.acqf import ThompsonSampling  # , thompson_sampling, ucb, ei
 from lapeft_bayesopt.utils import helpers
 # Our self-defined problems, using the format provided by lapeft-bayesopt
 from data_processor import TwentyQuestionsDataProcessor
 from prompting import MyPromptBuilder
-from soft_prompt import get_virtual_token
+from soft_prompt import get_virtual_token, get_outputs
 
 from botorch.models.gp_regression import SingleTaskGP
 from botorch.models.transforms.outcome import Standardize
@@ -97,7 +97,7 @@ class Parser(argparse.ArgumentParser):
         )
         self.add_argument(
             "--feat_extraction_strategy", type=str, choices=['last-token', 'average', 'max', 'first-token', 'vtoken'],
-            default="last-token"
+            default="average"
         )
         self.add_argument(
             "--additive_features", action=argparse.BooleanOptionalAction, default=False
@@ -107,6 +107,9 @@ class Parser(argparse.ArgumentParser):
         )
         self.add_argument(
             "--normalize_features", action=argparse.BooleanOptionalAction, default=False
+        )
+        self.add_argument(
+            "--decode_cand_vector", action=argparse.BooleanOptionalAction, default=False
         )
         self.add_argument(
             "--visualize_posterior", action=argparse.BooleanOptionalAction, default=False
@@ -202,24 +205,10 @@ def load_features(dataset, test_word, test_idx):
             "fp16": torch.float16,
             "fp32": torch.float32,
         }.get(args.dtype, None)
-        # Compute features from the last hidden state
-        if args.model.startswith('t5'):
-            tokenizer = get_t5_tokenizer(args.model)
-            llm_feat_extractor = T5Regressor(
-                kind=args.model,
-                tokenizer=tokenizer,
-                encoder_only=not is_vtoken_feat_extraction,
-                dtype=dtype
-            )
-        elif args.model.startswith('llama'):
-            tokenizer = get_llama2_tokenizer(args.model)
-            llm_feat_extractor = Llama2Regressor(
-                kind=args.model,
-                tokenizer=tokenizer,
-                dtype=dtype,
-                vtoken=is_vtoken_feat_extraction
-            )
-
+        # Load model and tokenizer
+        tokenizer, llm_feat_extractor = get_tokenizer_and_model(kind=args.model,
+                                                                dtype=dtype,
+                                                                is_vtoken=is_vtoken_feat_extraction)
         if not is_vtoken_feat_extraction and args.cuda:
             llm_feat_extractor.cuda()
         llm_feat_extractor.eval()
@@ -357,7 +346,7 @@ def optimize_acqf_and_get_observation(acq_fn, features, unseen_idxs, device):
     sims = cosine_similarity(features[unseen_idxs].to(device), candidates)
     _idx_best = sims.argmax().item()
     idx_best = unseen_idxs[_idx_best]
-    return idx_best
+    return idx_best, candidates
 
 
 def run_bayesopt(words, features, targets, test_word, n_init_data=10, T=None, seed=17, device='cpu'):
@@ -420,6 +409,30 @@ def run_bayesopt(words, features, targets, test_word, n_init_data=10, T=None, se
     # Track posterior values for visualization
     posterior_vals = {}
 
+    # If decoding the candidate vector is needed
+    if args.decode_cand_vector:
+        assert args.feat_extraction_strategy == 'vtoken'
+        dtype = features.dtype
+        # Load model and tokenizer
+        tokenizer, llm = get_tokenizer_and_model(kind=args.model,
+                                                 dtype=dtype,
+                                                 is_vtoken=True)
+        llm = llm.to(device)
+        llm.eval()
+        llm.freeze_params()
+        prompt_builder = MyPromptBuilder(kind=args.prompt_strategy, hint=args.hint)
+        prompt = prompt_builder.get_prompt("#", "#", vtoken=True)
+        prompt = prompt[:-1]
+        prompt_embed = None
+        if len(prompt) > 0:
+            token_embeds = llm.get_input_embeddings()
+            for p in token_embeds.parameters():
+                break
+            # Based on prompt text
+            prompt = " ".join(prompt)
+            prompt_embed = p[tokenizer(prompt, return_tensors='pt')['input_ids'][0]][None, :, :]
+            prompt_embed_norm_mean = prompt_embed.norm(dim=2).mean().to(device)
+
     # The BayesOpt loop --- or just use BoTorch since LaplaceBoTorch is compatible
     for t in pbar:
         if not bo_found:
@@ -431,7 +444,18 @@ def run_bayesopt(words, features, targets, test_word, n_init_data=10, T=None, se
             }[args.acquisition_fn]
             if args.optimize_acq:
                 # Optimize acquisition function
-                idx_best = optimize_acqf_and_get_observation(acq_fn, features, unseen_idxs, device=device)
+                idx_best, vec_best = optimize_acqf_and_get_observation(acq_fn, features, unseen_idxs, device=device)
+                # Decode the candidate vector
+                if args.decode_cand_vector:
+                    vtoken = (vec_best * (prompt_embed_norm_mean if args.normalize_features else 1))[None, None, :]
+                    vtoken_plus_text = vtoken
+                    if prompt_embed is not None:
+                        vtoken_plus_text = torch.cat((vtoken, prompt_embed), dim=1)  # prepend vtoken to prompt embed
+                    with torch.no_grad():
+                        vtoken_output = \
+                        get_outputs(llm, inputs_embeds=vtoken_plus_text.type(llm.dtype), device=device, text=True)[0]
+                    print(f"Decoded candidate vector: {vtoken_output}")
+
             else:
                 # Perform finite-set search
                 dataloader = data_utils.DataLoader(
