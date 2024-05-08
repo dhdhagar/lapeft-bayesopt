@@ -19,6 +19,8 @@ HINT="Hint: the hidden word is an example of a machine."  # Support for only one
 RESET_CACHE="no"
 # Wildcard
 WILDCARD=""
+# Run as sbatch
+SBATCH="no"
 
 # Parse arguments
 while [[ $# -gt 0 ]]; do
@@ -33,10 +35,20 @@ while [[ $# -gt 0 ]]; do
         --feat_types) FEAT_TYPES="$2"; shift ;;
         --reset_cache) RESET_CACHE="$2"; shift ;;
         --wildcard) WILDCARD="$2"; shift ;;
+        --sbatch) SBATCH="$2"; shift ;;
         *) echo "Invalid option: $1" >&2; exit 1 ;;
     esac
     shift
 done
+
+if [[ $SBATCH == "yes" ]]; then
+    echo CUDA_VISIBLE_DEVICES ${CUDA_VISIBLE_DEVICES}
+    eval "$(conda shell.bash hook)"
+    conda deactivate
+    conda activate lapeft
+    export PYTHONPATH=$(pwd):$PYTHONPATH;
+    export TRANSFORMERS_CACHE=/project/pi_mccallum_umass_edu/dagarwal_umass_edu/huggingface_cache
+fi
 
 # Reset cache setting
 if [[ $RESET_CACHE == "yes" ]]; then
