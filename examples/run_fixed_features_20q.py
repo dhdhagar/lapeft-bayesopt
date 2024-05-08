@@ -468,15 +468,19 @@ def run_bayesopt(words, features, targets, test_word, n_init_data=10, T=None, se
                 vec_best = vec_best.squeeze()
                 # Decode the candidate vector
                 if args.decode_cand_vector:
-                    vtoken = (vec_best * (warm_start_norm_mean if args.normalize_features else 1))[None, None, :]
-                    vtoken_plus_text = vtoken
-                    if args.prompt_strategy != 'word':
-                        vtoken_plus_text = torch.cat((vtoken, prompt_embed), dim=1)  # prepend vtoken to prompt embed
-                    with torch.no_grad():
-                        vtoken_output = \
-                            get_outputs(llm, tokenizer,
-                                        inputs_embeds=vtoken_plus_text.type(llm.dtype), device=device, text=True)[0]
-                    print(f"Decoded candidate vector: {vtoken_output}")
+                    idx_best_vec = features[idx_best].squeeze()
+                    print(" ")
+                    for __i, vec in enumerate([idx_best_vec, vec_best]):
+                        vtoken = (vec_best * (warm_start_norm_mean if args.normalize_features else 1))[None, None, :]
+                        vtoken_plus_text = vtoken
+                        if args.prompt_strategy != 'word':
+                            vtoken_plus_text = torch.cat((vtoken, prompt_embed), dim=1)  # prepend vtoken to prompt embed
+                        with torch.no_grad():
+                            vtoken_output = \
+                                get_outputs(llm, tokenizer,
+                                            inputs_embeds=vtoken_plus_text.type(llm.dtype), device=device, text=True)[0]
+                        print(f"Decoded vector ({'orig' if __i == 0 else 'optim'}): '{vtoken_output}'")
+                    print(" ")
 
             else:
                 # Perform finite-set search
