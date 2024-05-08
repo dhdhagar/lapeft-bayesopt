@@ -1,6 +1,11 @@
 from transformers import LlamaModel, LlamaConfig, AutoModelForCausalLM
 from .base import BaseLLMRegressor
-from .utils import LLMFeatureType
+
+
+class LLMFeatureType(Enum):
+    LAST_TOKEN = 1
+    FIRST_TOKEN = 2
+    AVERAGE = 3
 
 
 class Llama2Regressor(BaseLLMRegressor):
