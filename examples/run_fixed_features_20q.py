@@ -17,7 +17,9 @@ from torch.nn.functional import cosine_similarity
 # Non-finetuned surrogates. The finetuned surrogates are in lapeft_bayesopt.surrogates
 # from fixed_feat_surrogate import LaplaceBoTorch
 from laplace_bayesopt.botorch import LaplaceBoTorch
-from lapeft_bayesopt.foundation_models.utils import get_tokenizer_and_model
+from lapeft_bayesopt.foundation_models.t5 import T5Regressor
+from lapeft_bayesopt.foundation_models.llama2 import Llama2Regressor
+from lapeft_bayesopt.foundation_models.utils import get_llama2_tokenizer, get_t5_tokenizer
 from lapeft_bayesopt.utils.acqf import ThompsonSampling  # , thompson_sampling, ucb, ei
 from lapeft_bayesopt.utils import helpers
 # Our self-defined problems, using the format provided by lapeft-bayesopt
@@ -136,6 +138,26 @@ class Parser(argparse.ArgumentParser):
         self.add_argument(
             "--debug", action=argparse.BooleanOptionalAction, default=False
         )
+
+
+def get_tokenizer_and_model(kind, dtype, is_vtoken=False):
+    if kind.startswith('t5'):
+        tokenizer = get_t5_tokenizer(kind)
+        llm_feat_extractor = T5Regressor(
+            kind=kind,
+            tokenizer=tokenizer,
+            encoder_only=not is_vtoken,
+            dtype=dtype
+        )
+    elif kind.startswith('llama'):
+        tokenizer = get_llama2_tokenizer(kind)
+        llm_feat_extractor = Llama2Regressor(
+            kind=kind,
+            tokenizer=tokenizer,
+            dtype=dtype,
+            vtoken=is_vtoken
+        )
+    return tokenizer, llm_feat_extractor
 
 
 def get_avg_features(feat, data):
@@ -451,7 +473,8 @@ def run_bayesopt(words, features, targets, test_word, n_init_data=10, T=None, se
                         vtoken_plus_text = torch.cat((vtoken, prompt_embed), dim=1)  # prepend vtoken to prompt embed
                     with torch.no_grad():
                         vtoken_output = \
-                        get_outputs(llm, inputs_embeds=vtoken_plus_text.type(llm.dtype), device=device, text=True)[0]
+                            get_outputs(llm, inputs_embeds=vtoken_plus_text.type(llm.dtype), device=device, text=True)[
+                                0]
                     print(f"Decoded candidate vector: {vtoken_output}")
 
             else:

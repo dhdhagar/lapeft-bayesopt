@@ -1,11 +1,6 @@
 from transformers import T5EncoderModel, T5ForConditionalGeneration, T5Config
 from .base import BaseLLMRegressor
-
-
-class LLMFeatureType(Enum):
-    LAST_TOKEN = 1
-    FIRST_TOKEN = 2
-    AVERAGE = 3
+from .utils import LLMFeatureType
 
 
 class T5Regressor(BaseLLMRegressor):
