@@ -465,6 +465,7 @@ def run_bayesopt(words, features, targets, test_word, n_init_data=10, T=None, se
             if args.optimize_acq:
                 # Optimize acquisition function
                 idx_best, vec_best = optimize_acqf_and_get_observation(acq_fn, features, unseen_idxs, device=device)
+                vec_best = vec_best.squeeze()
                 # Decode the candidate vector
                 if args.decode_cand_vector:
                     vtoken = (vec_best * (warm_start_norm_mean if args.normalize_features else 1))[None, None, :]
