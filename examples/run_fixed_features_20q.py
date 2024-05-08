@@ -437,7 +437,7 @@ def run_bayesopt(words, features, targets, test_word, n_init_data=10, T=None, se
         tokenizer, llm = get_tokenizer_and_model(kind=args.model,
                                                  dtype=dtype,
                                                  is_vtoken=True)
-        llm = llm.to(device)
+        llm = llm.feature_extractor.to(device)
         llm.eval()
         llm.freeze_params()
         prompt_builder = MyPromptBuilder(kind=args.prompt_strategy if args.prompt_strategy in ['instruction', 'hint'] else 'instruction', hint=args.hint)
