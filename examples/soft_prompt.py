@@ -56,7 +56,7 @@ def create_training_arguments(out_dir, learning_rate, epochs, eval_steps, device
         # logging_steps=epochs // 10,
         logging_strategy="no",  # disable logging
         eval_steps=eval_steps,
-        save_steps=eval_steps*100,
+        save_steps=eval_steps * 100,
         metric_for_best_model='accuracy',
         load_best_model_at_end=True,
         save_strategy=IntervalStrategy.STEPS,
@@ -78,16 +78,22 @@ class CustomEarlyStoppingCallback(EarlyStoppingCallback):
 class CustomProgressCallback(ProgressCallback):
     def __init__(self):
         super()
+
     def on_train_begin(self, args, state, control, **kwargs):
         pass
+
     def on_step_end(self, args, state, control, **kwargs):
         pass
+
     def on_prediction_step(self, args, state, control, eval_dataloader=None, **kwargs):
         pass
+
     def on_evaluate(self, args, state, control, **kwargs):
         pass
+
     def on_log(self, args, state, control, logs=None, **kwargs):
         pass
+
     def on_train_end(self, args, state, control, **kwargs):
         pass
 
@@ -138,7 +144,8 @@ def get_virtual_token(feature_extractor, tokenizer, data, out_dir, num_virtual_t
         generation_config = PromptTuningConfig(
             task_type=TaskType.SEQ_2_SEQ_LM if model_name.startswith('t5') else TaskType.CAUSAL_LM,
             prompt_tuning_init=PromptTuningInit.TEXT,  # PromptTuningInit.RANDOM
-            prompt_tuning_init_text=tokenizer.decode(data['labels'][data['labels'].count(-100):], skip_special_tokens=True),
+            prompt_tuning_init_text=tokenizer.decode(data['labels'][data['labels'].count(-100):],
+                                                     skip_special_tokens=True),
             num_virtual_tokens=num_virtual_tokens,
             tokenizer_name_or_path=model_name,  # pre-trained model name
             num_transformer_submodules=1  # Force the vtoken to be added at the encoder only for encoder-decoder models
@@ -147,11 +154,12 @@ def get_virtual_token(feature_extractor, tokenizer, data, out_dir, num_virtual_t
         # print(peft_model.print_trainable_parameters())
 
         # Get training args
-        training_args = create_training_arguments(learning_rate=learning_rate*lr_mult, eval_steps=15,  # epochs//50,
+        training_args = create_training_arguments(learning_rate=learning_rate * lr_mult, eval_steps=15,  # epochs//50,
                                                   epochs=epochs, out_dir=out_dir, device=device)
         # Get trainer
         trainer = create_trainer(model=peft_model, tokenizer=tokenizer, training_args=training_args, dataset=hf_dataset,
-                                 schedule_free=schedule_free, _type="seq2seq" if model_name.startswith('t5') else "causal")
+                                 schedule_free=schedule_free,
+                                 _type="seq2seq" if model_name.startswith('t5') else "causal")
         # Run training
         trainer.train()
 
@@ -170,8 +178,8 @@ def get_virtual_token(feature_extractor, tokenizer, data, out_dir, num_virtual_t
     return virtual_token
 
 
-def get_outputs(model, inputs=None, inputs_embeds=None, decoder_inputs_embeds=None, max_new_tokens=300, device='cuda',
-                text=True):
+def get_outputs(model, tokenizer, inputs=None, inputs_embeds=None, decoder_inputs_embeds=None, max_new_tokens=500,
+                device='cuda', text=True):
     if inputs_embeds is not None or decoder_inputs_embeds is not None:
         outputs = model.generate(
             inputs_embeds=None if inputs_embeds is None else inputs_embeds.to(device),

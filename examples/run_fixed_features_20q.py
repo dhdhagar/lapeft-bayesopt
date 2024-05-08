@@ -473,8 +473,8 @@ def run_bayesopt(words, features, targets, test_word, n_init_data=10, T=None, se
                         vtoken_plus_text = torch.cat((vtoken, prompt_embed), dim=1)  # prepend vtoken to prompt embed
                     with torch.no_grad():
                         vtoken_output = \
-                            get_outputs(llm, inputs_embeds=vtoken_plus_text.type(llm.dtype), device=device, text=True)[
-                                0]
+                            get_outputs(llm, tokenizer,
+                                        inputs_embeds=vtoken_plus_text.type(llm.dtype), device=device, text=True)[0]
                     print(f"Decoded candidate vector: {vtoken_output}")
 
             else:
