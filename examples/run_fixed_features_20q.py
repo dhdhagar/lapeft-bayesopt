@@ -439,7 +439,6 @@ def run_bayesopt(words, features, targets, test_word, n_init_data=10, T=None, se
                                                  is_vtoken=True)
         llm = llm.feature_extractor.to(device)
         llm.eval()
-        llm.freeze_params()
         prompt_builder = MyPromptBuilder(kind=args.prompt_strategy if args.prompt_strategy in ['instruction', 'hint'] else 'instruction', hint=args.hint)
         prompt = prompt_builder.get_prompt("#", "#", vtoken=True)
         prompt = prompt[:-1]
