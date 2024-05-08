@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -e
 # This script is used to generate and cache features per model for a given word accepted as input
 
 # Define the set of datasets
