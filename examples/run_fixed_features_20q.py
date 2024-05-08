@@ -772,7 +772,7 @@ if __name__ == '__main__':
         targets = targets.squeeze()
         features_norm_mean = None
         if args.normalize_features:
-            features_norm_mean = features.norm(dim=1).mean.item()
+            features_norm_mean = features.norm(dim=1).mean().item()
             features = torch.nn.functional.normalize(features)  # l2-normalize
 
     if args.exit_after_feat_extraction:
