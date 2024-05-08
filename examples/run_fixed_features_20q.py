@@ -475,7 +475,7 @@ def run_bayesopt(words, features, targets, test_word, n_init_data=10, T=None, se
                         vtoken = (vec * (warm_start_norm_mean if args.normalize_features else 1))[None, None, :]
                         vtoken_plus_text = vtoken.to(device)
                         if args.prompt_strategy != 'word':
-                            vtoken_plus_text = torch.cat((vtoken, prompt_embed.to(device)), dim=1)  # prepend vtoken to prompt embed
+                            vtoken_plus_text = torch.cat((vtoken_plus_text, prompt_embed.to(device)), dim=1)  # prepend vtoken to prompt embed
                         with torch.no_grad():
                             vtoken_output = \
                                 get_outputs(llm, tokenizer,
