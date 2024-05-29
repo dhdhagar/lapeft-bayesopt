@@ -13,6 +13,7 @@ from sklearn.utils import shuffle as skshuffle
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 from torch.nn.functional import cosine_similarity
+import gensim.downloader
 
 # Non-finetuned surrogates. The finetuned surrogates are in lapeft_bayesopt.surrogates
 # from fixed_feat_surrogate import LaplaceBoTorch
@@ -489,6 +490,8 @@ def run_bayesopt(words, features, targets, test_word, n_init_data=10, T=None, se
                     prompt_tokenized = prompt_tokenized + [tokenizer.eos_token_id]
             prompt_embed = p[prompt_tokenized][None, :, :]
             prompt_embed_norm_mean = prompt_embed.norm(dim=2).mean().item()
+        if args.update_with_decoded_cand:
+            word2vec = gensim.downloader.load('word2vec-google-news-300')
 
     # The BayesOpt loop --- or just use BoTorch since LaplaceBoTorch is compatible
     for t in pbar:
@@ -547,7 +550,7 @@ def run_bayesopt(words, features, targets, test_word, n_init_data=10, T=None, se
                 try:
                     new_y = torch.tensor(word2vec.similarity(vtoken_output, test_word)).type(targets[0])
                 except:
-                    new_y = torch.tensor(0.).type(targets[0])
+                    new_y = torch.tensor(0.).type(targets[0])  # TODO: Or should this iteration be skipped?
             else:
                 seen_idxs.add(idx_best)  # Add to seen idxs
                 # Observe true value of selected candidate
