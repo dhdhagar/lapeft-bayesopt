@@ -491,6 +491,7 @@ def run_bayesopt(words, features, targets, test_word, n_init_data=10, T=None, se
             prompt_embed = p[prompt_tokenized][None, :, :]
             prompt_embed_norm_mean = prompt_embed.norm(dim=2).mean().item()
         if args.update_with_decoded_cand:
+            print("Loading word2vec")
             word2vec = gensim.downloader.load('word2vec-google-news-300')
 
     # The BayesOpt loop --- or just use BoTorch since LaplaceBoTorch is compatible
@@ -548,9 +549,9 @@ def run_bayesopt(words, features, targets, test_word, n_init_data=10, T=None, se
                 new_x = vec_best
                 new_x_label = vtoken_output
                 if word2vec.get_index(vtoken_output, -1000) != -1000:
-                    new_y = torch.tensor(word2vec.similarity(vtoken_output, test_word)).type(targets[0])
+                    new_y = torch.tensor(word2vec.similarity(vtoken_output, test_word)).type(targets[0].dtype)
                 else:
-                    new_y = torch.tensor(0.).type(targets[0])  # TODO: Or should this iteration be skipped?
+                    new_y = torch.tensor(0.).type(targets[0].dtype)  # TODO: Or should this iteration be skipped?
             else:
                 seen_idxs.add(idx_best)  # Add to seen idxs
                 # Observe true value of selected candidate
