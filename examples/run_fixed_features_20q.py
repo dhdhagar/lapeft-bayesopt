@@ -138,6 +138,9 @@ class Parser(argparse.ArgumentParser):
         self.add_argument(
             "--debug", action=argparse.BooleanOptionalAction, default=False
         )
+        self.add_argument(
+            "--standardize_surrogate", action=argparse.BooleanOptionalAction, default=True
+        )
         # LOW-RANK VTOKEN
         self.add_argument(
             "--lowrank", action=argparse.BooleanOptionalAction, default=False
@@ -425,7 +428,7 @@ def run_bayesopt(words, features, targets, test_word, n_init_data=10, T=None, se
         raise NotImplementedError
 
     # Initialize surrogate g (learn prior from the initial dataset)
-    surrogate = get_surrogate(init_x, init_y, device=device)
+    surrogate = get_surrogate(init_x, init_y, device=device, standardize=args.standardize_surrogate)
 
     # Prepare for the BO loop
     bo_found, rand_found = False, False
