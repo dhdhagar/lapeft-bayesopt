@@ -547,9 +547,9 @@ def run_bayesopt(words, features, targets, test_word, n_init_data=10, T=None, se
                 # Observe true value of selected candidate
                 new_x = vec_best
                 new_x_label = vtoken_output
-                try:
+                if word2vec.get_index(vtoken_output, -1000) != -1000:
                     new_y = torch.tensor(word2vec.similarity(vtoken_output, test_word)).type(targets[0])
-                except:
+                else:
                     new_y = torch.tensor(0.).type(targets[0])  # TODO: Or should this iteration be skipped?
             else:
                 seen_idxs.add(idx_best)  # Add to seen idxs
