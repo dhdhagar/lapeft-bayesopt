@@ -372,7 +372,7 @@ def optimize_acqf_and_get_observation(acq_fn, features, unseen_idxs, device):
         return np.random.choice(unseen_idxs)
 
     # optimize
-    candidates, _ = optimize_acqf(
+    candidates, _ = optimize_acqf(  # TODO: add projected gradient descent
         acq_function=acq_fn,
         bounds=torch.stack(
             [  # Restrict to the min-max range of the LLM activation function
@@ -507,9 +507,6 @@ def run_bayesopt(words, features, targets, test_word, n_init_data=10, T=None, se
                 # Optimize acquisition function
                 idx_best, vec_best = optimize_acqf_and_get_observation(acq_fn, features, unseen_idxs, device=device)
                 vec_best = vec_best.squeeze()
-                if args.lowrank:
-                    with torch.no_grad():
-                        vec_best = vec_best @ projection_matrix
                 # Decode the candidate vector
                 if args.decode_cand_vector:
                     idx_best_vec = features[idx_best].squeeze()
@@ -517,6 +514,9 @@ def run_bayesopt(words, features, targets, test_word, n_init_data=10, T=None, se
                     for __i, vec in enumerate([idx_best_vec, vec_best]):
                         vtoken = (vec * (warm_start_norm_mean if args.normalize_features else 1))[None, None, :]
                         vtoken_plus_text = vtoken.to(device)
+                        if args.lowrank:
+                            with torch.no_grad():
+                                vtoken_plus_text = vtoken_plus_text @ projection_matrix.to(device)
                         if args.prompt_strategy != 'word':
                             vtoken_plus_text = torch.cat((vtoken_plus_text, prompt_embed.to(device)), dim=1)  # prepend vtoken to prompt embed
                         with torch.no_grad():
