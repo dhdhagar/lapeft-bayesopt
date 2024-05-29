@@ -138,6 +138,23 @@ class Parser(argparse.ArgumentParser):
         self.add_argument(
             "--debug", action=argparse.BooleanOptionalAction, default=False
         )
+        # LOW-RANK VTOKEN
+        self.add_argument(
+            "--lowrank", action=argparse.BooleanOptionalAction, default=False
+        )
+        self.add_argument(
+            "--feat_path", type=str
+        )
+        self.add_argument(
+            "--projection_matrix_path", type=str
+        )
+        self.add_argument(
+            "--greedy_decode", action=argparse.BooleanOptionalAction, default=True
+        )
+        self.add_argument(
+            "--update_with_decoded_cand", action=argparse.BooleanOptionalAction, default=False
+        )
+
 
 
 def get_tokenizer_and_model(kind, dtype, is_vtoken=False):
@@ -215,82 +232,91 @@ def load_features(dataset, test_word, test_idx):
         CACHE_FNAME.append('additive')
         assert not is_vtoken_feat_extraction
     CACHE_FNAME = '_'.join(CACHE_FNAME)
-    # If cache exists then just load it, otherwise compute the features
-    if not args.reset_cache and os.path.exists(os.path.join(CACHE_FPATH, f'{CACHE_FNAME}_feats.bin')):
-        features = torch.load(os.path.join(CACHE_FPATH, f'{CACHE_FNAME}_feats.bin'))
+
+    if args.lowrank:
+        features = torch.load(args.feat_path)
+        projection_matrix = torch.load(args.projection_matrix_path)
         targets = torch.load(os.path.join(CACHE_FPATH, f'{CACHE_FNAME}_targets.bin'))
         print('\nLoaded cached features.')
     else:
-        dtype = {
-            "fp16": torch.float16,
-            "fp32": torch.float32,
-        }.get(args.dtype, None)
-        # Load model and tokenizer
-        tokenizer, llm_feat_extractor = get_tokenizer_and_model(kind=args.model,
-                                                                dtype=dtype,
-                                                                is_vtoken=is_vtoken_feat_extraction)
-        if not is_vtoken_feat_extraction and args.cuda:
-            llm_feat_extractor.cuda()
-        llm_feat_extractor.eval()
-        llm_feat_extractor.freeze_params()
-
-        # Build the textual representation based on the prompt strategy
-        prompt_builder = MyPromptBuilder(kind=args.prompt_strategy, hint=args.hint)
-        data_processor = TwentyQuestionsDataProcessor(prompt_builder, tokenizer)
-        dataloader = data_processor.get_dataloader(dataset, additive=args.additive_features,
-                                                   vtoken=is_vtoken_feat_extraction)
-
-        # Get features and target values for each candidate
-        features, targets = [], []
-        pbar = tqdm.tqdm(dataloader.dataset if is_vtoken_feat_extraction else dataloader)
-        for data in pbar:
-            if is_vtoken_feat_extraction:
-                # Backpropagate through the LLM to learn features as virtual tokens
-                feat = get_virtual_token(llm_feat_extractor, tokenizer, data,
-                                         out_dir=out_dir, device='cuda' if args.cuda else 'cpu')
-            else:
-                # Forward pass through the LLM, take the aggregate (over sequence dimension)
-                # of the last hidden state
-                with torch.no_grad():
-                    data['input_ids'] = data['input_ids'].squeeze()
-                    data['attention_mask'] = data['attention_mask'].squeeze()
-                    feat = llm_feat_extractor.forward_features(data)
-                    if args.additive_features:
-                        feat = feat.mean(dim=0).unsqueeze(dim=0)
-                    if args.feat_extraction_strategy == 'average':
-                        feat = get_avg_features(feat, data)
-                    elif args.feat_extraction_strategy == 'max':
-                        feat = get_max_features(feat, data)
-                    elif args.feat_extraction_strategy == 'last-token':
-                        feat = get_last_token_features(feat, data)
-                    elif args.feat_extraction_strategy == 'first-token':
-                        feat = get_first_token_features(feat, data)
-            features += list(feat)
-            if 'labels' in data:
-                targets += list(data['labels'])
-
-        features = torch.stack(features, dim=0).squeeze()
-        if len(targets) > 0:
-            targets = torch.stack(targets, dim=0) if type(targets[0]) is torch.Tensor else torch.Tensor(targets)
-            targets = targets.squeeze()
-            targets = targets.clamp(min=0., max=1.)  # Used 0-1 normalization for similarity scores
+        # If cache exists then just load it, otherwise compute the features
+        if not args.reset_cache and os.path.exists(os.path.join(CACHE_FPATH, f'{CACHE_FNAME}_feats.bin')):
+            features = torch.load(os.path.join(CACHE_FPATH, f'{CACHE_FNAME}_feats.bin'))
+            targets = torch.load(os.path.join(CACHE_FPATH, f'{CACHE_FNAME}_targets.bin'))
+            print('\nLoaded cached features.')
         else:
-            targets = cosine_similarity(features, features[test_idx])
-            targets = targets.clamp(min=-1., max=1.)
-        features = features.cpu()
-        targets = targets.cpu()
+            dtype = {
+                "fp16": torch.float16,
+                "fp32": torch.float32,
+            }.get(args.dtype, None)
+            # Load model and tokenizer
+            tokenizer, llm_feat_extractor = get_tokenizer_and_model(kind=args.model,
+                                                                    dtype=dtype,
+                                                                    is_vtoken=is_vtoken_feat_extraction)
+            if not is_vtoken_feat_extraction and args.cuda:
+                llm_feat_extractor.cuda()
+            llm_feat_extractor.eval()
+            llm_feat_extractor.freeze_params()
 
-        if args.rescale_scores:
-            # Rescale scores between [0, 1]
-            targets = (targets - targets.min()) / (targets.max() - targets.min())
-            if targets[targets < 1].max() < 0.8:
-                # Rescale scores to cover the full range in [0, 1]
-                targets[targets < 1] = 0.8 * (targets[targets < 1] - targets[targets < 1].min()) / (
-                        targets[targets < 1].max() - targets[targets < 1].min())
-        # Cache to files
-        torch.save(features, os.path.join(CACHE_FPATH, f'{CACHE_FNAME}_feats.bin'))
-        torch.save(targets, os.path.join(CACHE_FPATH, f'{CACHE_FNAME}_targets.bin'))
+            # Build the textual representation based on the prompt strategy
+            prompt_builder = MyPromptBuilder(kind=args.prompt_strategy, hint=args.hint)
+            data_processor = TwentyQuestionsDataProcessor(prompt_builder, tokenizer)
+            dataloader = data_processor.get_dataloader(dataset, additive=args.additive_features,
+                                                       vtoken=is_vtoken_feat_extraction)
 
+            # Get features and target values for each candidate
+            features, targets = [], []
+            pbar = tqdm.tqdm(dataloader.dataset if is_vtoken_feat_extraction else dataloader)
+            for data in pbar:
+                if is_vtoken_feat_extraction:
+                    # Backpropagate through the LLM to learn features as virtual tokens
+                    feat = get_virtual_token(llm_feat_extractor, tokenizer, data,
+                                             out_dir=out_dir, device='cuda' if args.cuda else 'cpu')
+                else:
+                    # Forward pass through the LLM, take the aggregate (over sequence dimension)
+                    # of the last hidden state
+                    with torch.no_grad():
+                        data['input_ids'] = data['input_ids'].squeeze()
+                        data['attention_mask'] = data['attention_mask'].squeeze()
+                        feat = llm_feat_extractor.forward_features(data)
+                        if args.additive_features:
+                            feat = feat.mean(dim=0).unsqueeze(dim=0)
+                        if args.feat_extraction_strategy == 'average':
+                            feat = get_avg_features(feat, data)
+                        elif args.feat_extraction_strategy == 'max':
+                            feat = get_max_features(feat, data)
+                        elif args.feat_extraction_strategy == 'last-token':
+                            feat = get_last_token_features(feat, data)
+                        elif args.feat_extraction_strategy == 'first-token':
+                            feat = get_first_token_features(feat, data)
+                features += list(feat)
+                if 'labels' in data:
+                    targets += list(data['labels'])
+
+            features = torch.stack(features, dim=0).squeeze()
+            if len(targets) > 0:
+                targets = torch.stack(targets, dim=0) if type(targets[0]) is torch.Tensor else torch.Tensor(targets)
+                targets = targets.squeeze()
+                targets = targets.clamp(min=0., max=1.)  # Used 0-1 normalization for similarity scores
+            else:
+                targets = cosine_similarity(features, features[test_idx])
+                targets = targets.clamp(min=-1., max=1.)
+            features = features.cpu()
+            targets = targets.cpu()
+
+            if args.rescale_scores:
+                # Rescale scores between [0, 1]
+                targets = (targets - targets.min()) / (targets.max() - targets.min())
+                if targets[targets < 1].max() < 0.8:
+                    # Rescale scores to cover the full range in [0, 1]
+                    targets[targets < 1] = 0.8 * (targets[targets < 1] - targets[targets < 1].min()) / (
+                            targets[targets < 1].max() - targets[targets < 1].min())
+            # Cache to files
+            torch.save(features, os.path.join(CACHE_FPATH, f'{CACHE_FNAME}_feats.bin'))
+            torch.save(targets, os.path.join(CACHE_FPATH, f'{CACHE_FNAME}_targets.bin'))
+
+    if args.lowrank:
+        return features, targets, projection_matrix
     return features, targets
 
 
@@ -370,7 +396,7 @@ def optimize_acqf_and_get_observation(acq_fn, features, unseen_idxs, device):
 
 
 def run_bayesopt(words, features, targets, test_word, n_init_data=10, T=None, seed=17, device='cpu',
-                 features_norm_mean=None):
+                 features_norm_mean=None, projection_matrix=None):
     np.random.seed(seed)
     torch.manual_seed(seed)
 
@@ -444,14 +470,21 @@ def run_bayesopt(words, features, targets, test_word, n_init_data=10, T=None, se
         prompt = prompt_builder.get_prompt("#", "#", vtoken=True)
         prompt = prompt[:-1]
         prompt_embed = None
-        warm_start_norm_mean = features_norm_mean # torch.linalg.vector_norm(init_x, dim=1).mean().item()
+        warm_start_norm_mean = features_norm_mean  # torch.linalg.vector_norm(init_x, dim=1).mean().item()
         if len(prompt) > 0:
             token_embeds = llm.get_input_embeddings()
             for p in token_embeds.parameters():
                 break
             # Based on prompt text
             prompt = " ".join(prompt)
-            prompt_embed = p[tokenizer(prompt, return_tensors='pt')['input_ids'][0]][None, :, :]
+            prompt_tokenized = tokenizer(prompt, return_tensors='pt')['input_ids'][0]
+            if args.model.startswith('llama'):
+                if prompt_tokenized[-1] == tokenizer.eos_token_id:
+                    prompt_tokenized = prompt_tokenized[:-1]
+            elif args.model.startswith('t5'):
+                if prompt_tokenized[-1] != tokenizer.eos_token_id:
+                    prompt_tokenized = prompt_tokenized + [tokenizer.eos_token_id]
+            prompt_embed = p[prompt_tokenized][None, :, :]
             prompt_embed_norm_mean = prompt_embed.norm(dim=2).mean().item()
 
     # The BayesOpt loop --- or just use BoTorch since LaplaceBoTorch is compatible
@@ -463,10 +496,14 @@ def run_bayesopt(words, features, targets, test_word, n_init_data=10, T=None, se
                 "thompson_sampling": ThompsonSampling(model=surrogate),
                 "random": None
             }[args.acquisition_fn]
+
             if args.optimize_acq:
                 # Optimize acquisition function
                 idx_best, vec_best = optimize_acqf_and_get_observation(acq_fn, features, unseen_idxs, device=device)
                 vec_best = vec_best.squeeze()
+                if args.lowrank:
+                    with torch.no_grad():
+                        vec_best = vec_best @ projection_matrix
                 # Decode the candidate vector
                 if args.decode_cand_vector:
                     idx_best_vec = features[idx_best].squeeze()
@@ -478,11 +515,11 @@ def run_bayesopt(words, features, targets, test_word, n_init_data=10, T=None, se
                             vtoken_plus_text = torch.cat((vtoken_plus_text, prompt_embed.to(device)), dim=1)  # prepend vtoken to prompt embed
                         with torch.no_grad():
                             vtoken_output = \
-                                get_outputs(llm, tokenizer,
-                                            inputs_embeds=vtoken_plus_text.type(llm.dtype), device=device, text=True)[0]
+                                get_outputs(llm, tokenizer, inputs_embeds=vtoken_plus_text.type(llm.dtype),
+                                            device=device, text=True, greedy=args.greedy_decode)[0]
+                        vtoken_output = vtoken_output.strip().lower()
                         print(f"Decoded vector ({'orig' if __i == 0 else 'optim'}): '{vtoken_output}'")
                     print(" ")
-
             else:
                 # Perform finite-set search
                 dataloader = data_utils.DataLoader(
@@ -499,10 +536,20 @@ def run_bayesopt(words, features, targets, test_word, n_init_data=10, T=None, se
                 acq_vals = torch.cat(acq_vals, dim=0).cpu()
                 _idx_best = torch.argmax(acq_vals).item()
                 idx_best = unseen_idxs[_idx_best]
-            seen_idxs.add(idx_best)  # Add to seen idxs
-            # Observe true value of selected candidate
-            new_x, new_y = features[idx_best], targets[idx_best]
-            new_x_label = words[idx_best]
+
+            if args.decode_cand_vector and args.update_with_decoded_cand:
+                # Observe true value of selected candidate
+                new_x = vec_best
+                new_x_label = vtoken_output
+                try:
+                    new_y = torch.tensor(word2vec.similarity(vtoken_output, test_word)).type(targets[0])
+                except:
+                    new_y = torch.tensor(0.).type(targets[0])
+            else:
+                seen_idxs.add(idx_best)  # Add to seen idxs
+                # Observe true value of selected candidate
+                new_x, new_y = features[idx_best], targets[idx_best]
+                new_x_label = words[idx_best]
             if new_y.item() > best_y:
                 best_y = new_y.item()
                 best_x_label = new_x_label
@@ -766,7 +813,12 @@ if __name__ == '__main__':
         test_idx = 0  # assuming dataset is sorted by decreasing similarity
         test_word = pd_dataset['Words'][test_idx]
         print(f'\nHIDDEN WORD: "{test_word}"')
-        features, targets = load_features(dataset=pd_dataset, test_word=test_word, test_idx=test_idx)
+        projection_matrix = None
+        if args.lowrank:
+            features, targets, projection_matrix = load_features(dataset=pd_dataset, test_word=test_word,
+                                                                 test_idx=test_idx)
+        else:
+            features, targets = load_features(dataset=pd_dataset, test_word=test_word, test_idx=test_idx)
         # TEMP FIX; TODO: Fix shape of saved features
         features = features.squeeze()
         targets = targets.squeeze()
@@ -788,7 +840,8 @@ if __name__ == '__main__':
         print(f'\nSeed {seed}:')
         results = run_bayesopt(words=list(pd_dataset['Words']), features=features, targets=targets,
                                test_word=test_word, n_init_data=args.n_init_data, T=args.T, seed=seed,
-                               device='cuda' if args.cuda else 'cpu', features_norm_mean=features_norm_mean)
+                               device='cuda' if args.cuda else 'cpu', features_norm_mean=features_norm_mean,
+                               projection_matrix=projection_matrix)
         plot(results)
         all_results.append(results)
     end_time = time.time()

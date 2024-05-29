@@ -178,21 +178,33 @@ def get_virtual_token(feature_extractor, tokenizer, data, out_dir, num_virtual_t
     return virtual_token
 
 
-def get_outputs(model, tokenizer, inputs=None, inputs_embeds=None, decoder_inputs_embeds=None, max_new_tokens=500,
-                device='cuda', text=True):
+def get_outputs(model, tokenizer, inputs=None, inputs_embeds=None, decoder_inputs_embeds=None, max_new_tokens=50,
+                device='cuda', text=True, greedy=True, decoding_args={}):
+    _decoding_args = {}
+    if not greedy:
+        _decoding_args = {
+            "do_sample": True,
+            "temperature": 0.4,
+            "top_p": 0.95,
+            "repetition_penalty": 1.5,  # Avoid repetition.
+            "early_stopping": True,  # The model can stop before reach the max_length
+        }
+        _decoding_args.update(decoding_args)
     if inputs_embeds is not None or decoder_inputs_embeds is not None:
         outputs = model.generate(
             inputs_embeds=None if inputs_embeds is None else inputs_embeds.to(device),
             decoder_inputs_embeds=None if decoder_inputs_embeds is None else decoder_inputs_embeds.to(device),
             max_new_tokens=max_new_tokens,
-            eos_token_id=tokenizer.eos_token_id
+            eos_token_id=tokenizer.eos_token_id,
+            **_decoding_args
         )
     else:
         outputs = model.generate(
             input_ids=inputs["input_ids"].to(device),
             attention_mask=inputs["attention_mask"].to(device),
             max_new_tokens=max_new_tokens,
-            eos_token_id=tokenizer.eos_token_id
+            eos_token_id=tokenizer.eos_token_id,
+            **_decoding_args
         )
     if text:
         return tokenizer.batch_decode(outputs, skip_special_tokens=True)
