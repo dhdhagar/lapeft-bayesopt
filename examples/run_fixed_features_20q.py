@@ -491,7 +491,7 @@ def run_bayesopt(words, features, targets, test_word, n_init_data=10, T=None, se
             prompt_embed = p[prompt_tokenized][None, :, :]
             prompt_embed_norm_mean = prompt_embed.norm(dim=2).mean().item()
         if args.update_with_decoded_cand:
-            print("Loading word2vec")
+            print("\nLoading word2vec")
             word2vec = gensim.downloader.load('word2vec-google-news-300')
 
     # The BayesOpt loop --- or just use BoTorch since LaplaceBoTorch is compatible
@@ -560,7 +560,7 @@ def run_bayesopt(words, features, targets, test_word, n_init_data=10, T=None, se
             if new_y.item() > best_y:
                 best_y = new_y.item()
                 best_x_label = new_x_label
-                best_rank = word2rank[best_x_label]
+                best_rank = word2rank[best_x_label] if best_x_label in word2rank else trace_best_rank[-1]
                 if best_y == ground_truth_max:
                     steps_to_opt = t + 1
                     bo_found = True
@@ -568,7 +568,7 @@ def run_bayesopt(words, features, targets, test_word, n_init_data=10, T=None, se
             trace_best_rank.append(best_rank)
             trace_best_x_label.append(best_x_label)
             trace_y.append(new_y.item())
-            trace_rank.append(word2rank[new_x_label])
+            trace_rank.append(word2rank[new_x_label] if new_x_label in word2rank else trace_rank[-1])
             trace_x_label.append(new_x_label)
 
             if args.visualize_posterior:
@@ -590,15 +590,15 @@ def run_bayesopt(words, features, targets, test_word, n_init_data=10, T=None, se
                                                             new_y.reshape(1, -1).to(device))
 
             pbar.set_description(
-                f'[Best f(x="{best_x_label}") = {best_y:.3f} (rank={word2rank[best_x_label]}), '
-                + f'curr f(x="{new_x_label}") = {new_y.item():.3f} (rank={word2rank[new_x_label]})]'
+                f'[Best f(x="{best_x_label}") = {best_y:.3f} (rank={trace_best_rank[-1]}), '
+                + f'curr f(x="{new_x_label}") = {new_y.item():.3f} (rank={trace_rank[-1]})]'
             )
         else:
             trace_best_y.append(trace_best_y[-1])
             trace_best_rank.append(trace_best_rank[-1])
             trace_best_x_label.append(trace_best_x_label[-1])
             pbar.set_description(
-                f'[Best f(x="{best_x_label}") = {best_y:.3f} (rank={word2rank[best_x_label]})]'
+                f'[Best f(x="{best_x_label}") = {best_y:.3f} (rank={trace_best_rank[-1]})]'
             )
 
         # Random sampling baseline
